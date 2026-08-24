@@ -1,0 +1,17 @@
+{
+  "name": "@shadow-clash/admin",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@shadow-clash/shared": "*"
+  },
+  "devDependencies": {
+    "vite": "^5.1.4",
+    "typescript": "^5.3.3"
+  }
+}
