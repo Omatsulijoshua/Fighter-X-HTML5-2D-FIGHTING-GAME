@@ -1,7 +1,7 @@
 # Project Status - SHADOW CLASH
 
 ## Current Status
-- **Current Phase**: Phase 5: Multiple Fighters (Completed)
+- **Current Phase**: Phase 6: AI Opponent (Completed)
 
 ## Completed Features
 - **Root Configuration**: Setup npm workspaces, build scripts, tsconfig defaults, and testing framework (Vitest).
@@ -25,26 +25,28 @@
 - **Fighter Templates (`apps/client/src/game/fighters/fighter-definitions.ts`)**: Configured 4 balanced, data-driven templates: Kairo, Brutus, Nyx, and Razor.
 - **Unique Specials & Projectile Engine (`apps/client/src/game/engine/game-loop.ts`)**: Implemented Kairo's speed dash, Nyx's swap-side teleportation, Brutus's heavy ground smash, and Razor's traveling Energy Blade projectile.
 - **Circular Dependency Break (`apps/client/src/game/fighters/attack-definitions.ts`)**: Decoupled default attacks from `fighter.ts` to allow templates and fighters to import them independently.
+- **AI Decision Engine (`apps/client/src/game/engine/ai-opponent.ts`)**: Rules-based AI routing logic driving Player 2's inputs dynamically. Supports Easy, Normal, Hard, and Expert difficulty levels.
+- **Reaction Delay & Blocking Probability (`apps/client/src/game/engine/ai-opponent.ts`)**: Implemented variable decision tick frequencies (2 to 30 ticks delay) and defensive blocking rates (15% to 95%) simulating human response times. Includes gap-closing jumps, projectile evasion, and grab counter-attacks.
 
 ## Remaining Features
-- **Phase 6**: AI system (Easy, Normal, Hard, Expert configurations).
-- ... (Phases 7 to 16)
+- **Phase 7**: Dynamic character selection screens.
+- ... (Phases 8 to 16)
 
 ## Known Bugs
 - None.
 
 ## Tests Performed
 1. **TypeScript compilation**: Built all packages using `npm run build`.
-2. **Unit tests**: Ran `npm run test` executing shared constants, physics, collisions, fighter crouching/blocking/damage, combat hit detections, combo multipliers, special costs, Kairo special dash, Nyx teleport offsets, Brutus smash ranges, and Razor projectile spawns.
+2. **Unit tests**: Ran `npm run test` executing 27 tests checking shared constants, physics, body collisions, fighter states, combat systems, specials, projectiles, AI reaction delay ticks, and blocking frequencies.
 3. **Browser Integration**: Ran headless Chrome via Puppeteer to load `http://localhost:5173/`, checked for JS console and network errors, and verified WebSocket connection handshake.
 
 ## Test Results
 1. **TypeScript build**: Compiles cleanly with exit code 0.
-2. **Vitest unit tests**: 24/24 tests passed successfully.
-3. **Browser verification**: 0 console errors, 0 network errors. Verified stable loop ticking at 60 FPS, Socket.IO handshakes, canvas drawing of countdowns, combo counters, energy bars, round indicators, and projectiles.
+2. **Vitest unit tests**: 27/27 tests passed successfully.
+3. **Browser verification**: 0 console errors, 0 network errors. Verified stable loop ticking at 60 FPS, Socket.IO handshakes, canvas drawing of countdowns, combo counters, energy bars, round indicators, projectiles, and P2's automated AI behaviors.
 
 ## Next Phase
-- Phase 6: AI Opponent System
+- Phase 7: Character Selection
 
 ## Important Architectural Decisions
 1. **Monorepo structure**: Using npm workspaces under `apps/*` and `packages/*` to maintain distinct deployment units (client, server, admin) and share typescript models efficiently.
@@ -56,3 +58,4 @@
 7. **Hurtbox Segmentation**: Fighters are partitioned into three distinct hurtboxes (Head, Torso, Legs) rather than a single large box, allowing for sophisticated hit detection, hit box alignment, and crouch evasions.
 8. **Decay Damage Scaling**: Configured combo multipliers scaling down sequential hits to protect player balance and suppress infinite loop exploits.
 9. **Attack definitions decoupling**: Decoupling default attacks into `attack-definitions.ts` resolves circular dependency loops during template instantiation.
+10. **AIOpponent isolation**: Placed the AI logic in a standalone decision component, returning virtual input masks that route seamlessly into P2 in place of physical keyboard inputs.

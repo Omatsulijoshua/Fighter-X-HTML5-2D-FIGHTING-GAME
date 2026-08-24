@@ -3,11 +3,13 @@ import { PhysicsEngine } from '../physics/physics-engine.js';
 import { CollisionDetector } from '../collision/collision-detector.js';
 import { Renderer } from './renderer.js';
 import { Fighter } from '../fighters/fighter.js';
+import { AIOpponent } from './ai-opponent.js';
 
 export class GameLoop {
   private context: GameContext;
   private ctx: CanvasRenderingContext2D;
   private running: boolean = false;
+  private aiOpponent: AIOpponent = new AIOpponent();
 
   // Fixed timestep configuration: 60 logic ticks per second (~16.67ms)
   private readonly TICK_MS = 1000 / 60;
@@ -82,7 +84,17 @@ export class GameLoop {
 
     if (this.context.matchState === 'FIGHTING') {
       p1Inputs = this.context.inputP1.getInputs(this.context.tickCount).inputs;
-      p2Inputs = this.context.inputP2.getInputs(this.context.tickCount).inputs;
+      if (this.context.isSinglePlayer) {
+        p2Inputs = this.aiOpponent.update(
+          p2,
+          p1,
+          this.context.aiDifficulty,
+          this.context.tickCount,
+          this.context.projectiles
+        );
+      } else {
+        p2Inputs = this.context.inputP2.getInputs(this.context.tickCount).inputs;
+      }
     }
 
     // 2. Update players

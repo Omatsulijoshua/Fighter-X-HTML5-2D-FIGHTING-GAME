@@ -51,6 +51,10 @@ export class GameContext {
   public roundWinner: string | null = null;
   public matchWinner: string | null = null;
 
+  // Single player / AI variables
+  public isSinglePlayer: boolean = true;
+  public aiDifficulty: 'EASY' | 'NORMAL' | 'HARD' | 'EXPERT' = 'NORMAL';
+
   // Projectile tracking
   public projectiles: GameProjectile[] = [];
 
