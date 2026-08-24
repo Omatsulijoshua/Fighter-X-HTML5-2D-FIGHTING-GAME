@@ -4,6 +4,7 @@ import { CollisionBox } from '../collision/collision-detector.js';
 import { GameCamera } from '../camera/game-camera.js';
 import { InputManager, PLAYER_1_DEFAULT_BINDINGS, PLAYER_2_DEFAULT_BINDINGS } from '../input/input-manager.js';
 import { Fighter } from '../fighters/fighter.js';
+import { FIGHTER_TEMPLATES } from '../fighters/fighter-definitions.js';
 
 export interface GamePlayer extends PhysicsEntity, CollisionBox {
   id: string;
@@ -16,8 +17,18 @@ export interface GamePlayer extends PhysicsEntity, CollisionBox {
   state: FighterState;
 }
 
+export interface GameProjectile {
+  position: Vector2D;
+  velocity: Vector2D;
+  width: number;
+  height: number;
+  damage: number;
+  ownerId: string;
+  active: boolean;
+}
+
 export const STAGE_WIDTH = 2000;
-export const GROUND_Y = 620; // Height is 720, ground floor at 620
+export const GROUND_Y = 620;
 
 export class GameContext {
   public p1: Fighter;
@@ -30,41 +41,53 @@ export class GameContext {
   public debugMode: boolean = false;
   public isPaused: boolean = false;
 
-  // Round / Match System variables
+  // Round / Match variables
   public matchState: MatchState = 'COUNTDOWN';
   public roundNumber: number = 1;
   public p1RoundWins: number = 0;
   public p2RoundWins: number = 0;
-  public roundTimer: number = 99 * 60; // 99 seconds in ticks (at 60 ticks/sec)
-  public countdownTimer: number = 3 * 60; // 3 seconds in ticks
+  public roundTimer: number = 99 * 60;
+  public countdownTimer: number = 3 * 60;
   public roundWinner: string | null = null;
   public matchWinner: string | null = null;
+
+  // Projectile tracking
+  public projectiles: GameProjectile[] = [];
 
   constructor() {
     this.camera = new GameCamera();
     this.inputP1 = new InputManager(PLAYER_1_DEFAULT_BINDINGS);
     this.inputP2 = new InputManager(PLAYER_2_DEFAULT_BINDINGS);
 
-    // Initializing Player 1 (Fast martial artist template)
-    this.p1 = new Fighter({
+    // Instantiate Player 1 as KAIRO (Fast martial artist template)
+    this.p1 = new Fighter(FIGHTER_TEMPLATES.KAIRO, {
       id: 'p1',
-      name: 'KAIRO',
       x: 300,
-      weight: 1.0,
-      speed: 6.0,
-      jumpForce: 18.0,
       facingLeft: false,
     });
 
-    // Initializing Player 2 (Heavy armored template)
-    this.p2 = new Fighter({
+    // Instantiate Player 2 as BRUTUS (Heavy armored tank template)
+    this.p2 = new Fighter(FIGHTER_TEMPLATES.BRUTUS, {
       id: 'p2',
-      name: 'BRUTUS',
       x: STAGE_WIDTH - 400,
-      weight: 1.2,
-      speed: 4.5,
-      jumpForce: 16.0,
       facingLeft: true,
     });
+
+    // Register projectile spawn triggers
+    this.p1.onSpawnProjectile = (proj) => this.spawnProjectile(proj);
+    this.p2.onSpawnProjectile = (proj) => this.spawnProjectile(proj);
+  }
+
+  private spawnProjectile(proj: { x: number; y: number; vx: number; damage: number; ownerId: string }) {
+    this.projectiles.push({
+      position: { x: proj.x, y: proj.y },
+      velocity: { x: proj.vx, y: 0 },
+      width: 40,
+      height: 20,
+      damage: proj.damage,
+      ownerId: proj.ownerId,
+      active: true
+    });
+    console.log(`Projectile spawned by ${proj.ownerId} at [${proj.x}, ${proj.y}]`);
   }
 }

@@ -49,6 +49,7 @@ export class InputManager {
   }
 
   private setupListeners() {
+    if (typeof window === 'undefined') return;
     window.addEventListener('keydown', (e) => {
       // Prevent browser scrolling on arrow keys and spacebar
       if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) {

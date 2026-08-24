@@ -1,5 +1,5 @@
 import { GAME_WIDTH, GAME_HEIGHT } from '@shadow-clash/shared';
-import { GameContext, STAGE_WIDTH, GROUND_Y } from './game-context.js';
+import { GameContext, STAGE_WIDTH, GROUND_Y, GameProjectile } from './game-context.js';
 import { Fighter } from '../fighters/fighter.js';
 
 export class Renderer {
@@ -50,6 +50,9 @@ export class Renderer {
     // 5. Draw Players
     this.drawPlayer(ctx, context.p1, '#ff0055', context.debugMode);
     this.drawPlayer(ctx, context.p2, '#0055ff', context.debugMode);
+
+    // Draw active projectiles
+    this.drawProjectiles(ctx, context.projectiles);
 
     // Restore translation for HUD drawing (screen space)
     ctx.restore();
@@ -362,5 +365,26 @@ export class Renderer {
     ctx.fillText(` Pos: [${Math.round(context.p2.position.x)}, ${Math.round(context.p2.position.y)}] | State: ${context.p2.state}`, 20, 315);
     ctx.fillText(` Vel: [${context.p2.velocity.x.toFixed(2)}, ${context.p2.velocity.y.toFixed(2)}] | Stun: ${context.p2.stateTimer}`, 20, 330);
     ctx.fillText(` Health: ${context.p2.health} | Energy: ${context.p2.energy} | Combo: ${context.p2.comboCount}`, 20, 345);
+  }
+
+  private static drawProjectiles(ctx: CanvasRenderingContext2D, projectiles: GameProjectile[]) {
+    ctx.save();
+    for (const proj of projectiles) {
+      if (!proj.active) continue;
+
+      // Draw as a glowing cyan slash blade
+      ctx.fillStyle = '#00ffff';
+      ctx.fillRect(proj.position.x, proj.position.y, proj.width, proj.height);
+
+      // Inner blade glow
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(proj.position.x + 4, proj.position.y + 3, proj.width - 8, proj.height - 6);
+
+      // Tail trailing particles placeholder
+      ctx.fillStyle = 'rgba(0, 255, 255, 0.4)';
+      const tailX = proj.velocity.x > 0 ? proj.position.x - 15 : proj.position.x + proj.width;
+      ctx.fillRect(tailX, proj.position.y + 4, 15, proj.height - 8);
+    }
+    ctx.restore();
   }
 }

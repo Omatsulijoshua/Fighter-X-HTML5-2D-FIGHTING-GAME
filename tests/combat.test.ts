@@ -1,11 +1,12 @@
 import { expect, test, describe } from 'vitest';
 import { Fighter, LIGHT_ATTACK } from '../apps/client/src/game/fighters/fighter.js';
+import { FIGHTER_TEMPLATES } from '../apps/client/src/game/fighters/fighter-definitions.js';
 import { CollisionDetector } from '../apps/client/src/game/collision/collision-detector.js';
 
 describe('Combat Engine Tests', () => {
   test('should detect overlap between attack hitbox and multi-hurtboxes', () => {
-    const p1 = new Fighter({ id: 'p1', name: 'KAIRO', x: 100, weight: 1, speed: 5, jumpForce: 15, facingLeft: false });
-    const p2 = new Fighter({ id: 'p2', name: 'BRUTUS', x: 150, weight: 1.2, speed: 4, jumpForce: 14, facingLeft: true });
+    const p1 = new Fighter(FIGHTER_TEMPLATES.KAIRO, { id: 'p1', x: 100, facingLeft: false });
+    const p2 = new Fighter(FIGHTER_TEMPLATES.BRUTUS, { id: 'p2', x: 150, facingLeft: true });
 
     p1.state = 'ATTACKING';
     p1.attackPhase = 'ACTIVE';
@@ -26,7 +27,7 @@ describe('Combat Engine Tests', () => {
   });
 
   test('should apply combo damage scaling correctly', () => {
-    const p1 = new Fighter({ id: 'p1', name: 'KAIRO', x: 300, weight: 1.0, speed: 6.0, jumpForce: 18.0, facingLeft: false });
+    const p1 = new Fighter(FIGHTER_TEMPLATES.KAIRO, { id: 'p1', x: 300, facingLeft: false });
     
     // First hit (combo = 0): scale = 1.0 -> 14 damage
     const scale0 = Math.max(0.20, Math.pow(0.85, p1.comboCount));
@@ -47,7 +48,7 @@ describe('Combat Engine Tests', () => {
   });
 
   test('special attack should check and deduct energy cost', () => {
-    const p1 = new Fighter({ id: 'p1', name: 'KAIRO', x: 300, weight: 1.0, speed: 6.0, jumpForce: 18.0, facingLeft: false });
+    const p1 = new Fighter(FIGHTER_TEMPLATES.KAIRO, { id: 'p1', x: 300, facingLeft: false });
     p1.isGrounded = true;
     
     // Attempt special with 0 energy
@@ -63,14 +64,14 @@ describe('Combat Engine Tests', () => {
   });
 
   test('throws should ignore blocking state and apply damage and knockdown', () => {
-    const defender = new Fighter({ id: 'p2', name: 'BRUTUS', x: 350, weight: 1.2, speed: 4.5, jumpForce: 16.0, facingLeft: true });
+    const defender = new Fighter(FIGHTER_TEMPLATES.BRUTUS, { id: 'p2', x: 350, facingLeft: true });
     
     defender.state = 'BLOCKING';
 
     // Take unblockable throw (comes from left, so attacker facingLeft = false)
     defender.takeThrow(16, 10, false);
 
-    expect(defender.health).toBe(84); // 100 - 16 = 84
+    expect(defender.health).toBe(104); // Brutus maxHealth (120) - 16 = 104
     expect(defender.state).toBe('KNOCKED_DOWN');
     expect(defender.stateTimer).toBe(40); // 40 frames knockdown
   });
