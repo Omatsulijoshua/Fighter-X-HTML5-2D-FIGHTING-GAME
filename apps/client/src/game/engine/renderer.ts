@@ -66,9 +66,9 @@ export class Renderer {
   private static drawPlayer(ctx: CanvasRenderingContext2D, player: Fighter, color: string, debugMode: boolean) {
     ctx.save();
 
-    // Draw death animation flat on floor
-    if (player.state === 'DEAD') {
-      ctx.fillStyle = '#3a3a3a';
+    // Rotate player flat if KNOCKED_DOWN or DEAD
+    if (player.state === 'DEAD' || player.state === 'KNOCKED_DOWN') {
+      ctx.fillStyle = player.state === 'DEAD' ? '#3a3a3a' : '#ff4444';
       ctx.translate(player.position.x + player.width / 2, GROUND_Y);
       ctx.rotate(player.facingLeft ? -Math.PI / 2 : Math.PI / 2);
       ctx.fillRect(-player.width / 2, -player.width, player.width, player.height);
@@ -76,22 +76,29 @@ export class Renderer {
       return;
     }
 
-    // Highlight player solid pink-white during hit flash
+    // If GETTING_UP, draw slightly shorter/slanted
+    const drawHeight = player.state === 'GETTING_UP' ? 180 : player.height;
+    const drawY = player.state === 'GETTING_UP' ? player.position.y + 70 : player.position.y;
+
+    // Apply color/flash logic
     if (player.hitFlash) {
-      ctx.fillStyle = '#ffcccc';
+      ctx.fillStyle = '#ffffff'; // White hit flash
+    } else if (player.state === 'ATTACKING' && player.currentAttack?.id === 'special') {
+      // Glow orange during special attacks
+      ctx.fillStyle = '#ff8c00';
     } else {
       ctx.fillStyle = color;
     }
 
-    // Draw standard body box
-    ctx.fillRect(player.position.x, player.position.y, player.width, player.height);
+    // Draw body bounding box
+    ctx.fillRect(player.position.x, drawY, player.width, drawHeight);
 
     // Draw facing direction line
     ctx.strokeStyle = '#fff';
     ctx.lineWidth = 3;
     ctx.beginPath();
     const startX = player.position.x + player.width / 2;
-    const startY = player.position.y + 40;
+    const startY = drawY + 40;
     const endX = startX + (player.facingLeft ? -40 : 40);
     ctx.moveTo(startX, startY);
     ctx.lineTo(endX, startY);
@@ -100,7 +107,7 @@ export class Renderer {
     // Draw eyes indicator
     ctx.fillStyle = '#000';
     const eyeX = player.facingLeft ? player.position.x + 20 : player.position.x + player.width - 30;
-    ctx.fillRect(eyeX, player.position.y + 30, 10, 10);
+    ctx.fillRect(eyeX, drawY + 30, 10, 10);
 
     // Draw blocking shield indicator
     if (player.state === 'BLOCKING') {
@@ -118,75 +125,127 @@ export class Renderer {
       ctx.stroke();
     }
 
-    // Draw attack hitbox (active frames)
+    // Draw active attack hitbox
     const hitbox = player.getAttackHitbox();
-    if (hitbox) {
-      ctx.strokeStyle = '#ff0000';
+    if (hitbox && player.currentAttack) {
+      const isSpecial = player.currentAttack.id === 'special';
+      const isThrow = player.currentAttack.id === 'throw';
+      
+      ctx.strokeStyle = isSpecial ? '#ff4500' : (isThrow ? '#ff00ff' : '#ff0000');
       ctx.lineWidth = 2;
       ctx.strokeRect(hitbox.position.x, hitbox.position.y, hitbox.width, hitbox.height);
-      ctx.fillStyle = 'rgba(255, 0, 0, 0.2)';
+      ctx.fillStyle = isSpecial ? 'rgba(255, 69, 0, 0.25)' : (isThrow ? 'rgba(255, 0, 255, 0.2)' : 'rgba(255, 0, 0, 0.15)');
       ctx.fillRect(hitbox.position.x, hitbox.position.y, hitbox.width, hitbox.height);
     }
 
-    // Debug overlays (Hitbox outlines)
+    // Debug overlays (Hitboxes/Hurtboxes wireframes)
     if (debugMode) {
       // Body collision box outline (Blue)
       ctx.strokeStyle = '#00ffff';
       ctx.lineWidth = 2;
-      ctx.strokeRect(player.position.x, player.position.y, player.width, player.height);
+      ctx.strokeRect(player.position.x, drawY, player.width, drawHeight);
 
-      // Hurtbox outline (Green)
+      // Draw multi-hurtboxes (Green)
       ctx.strokeStyle = '#00ff00';
-      ctx.strokeRect(player.position.x + 5, player.position.y + 5, player.width - 10, player.height - 10);
+      const hurtboxes = player.getHurtboxes();
+      for (const hurtbox of hurtboxes) {
+        ctx.strokeRect(hurtbox.position.x, hurtbox.position.y, hurtbox.width, hurtbox.height);
+      }
     }
 
     ctx.restore();
   }
 
   private static drawHUD(ctx: CanvasRenderingContext2D, context: GameContext, fps: number) {
-    // Player 1 HUD (Left)
+    // 1. Draw Player 1 Stature (Left Side)
     this.drawHealthBar(ctx, 50, 45, 400, 20, context.p1.health, context.p1.maxHealth, false);
     this.drawEnergyBar(ctx, 50, 70, 300, 10, context.p1.energy, context.p1.maxEnergy, false);
+    
     ctx.fillStyle = '#fff';
     ctx.font = 'bold 20px sans-serif';
     ctx.textAlign = 'left';
     ctx.fillText(context.p1.name, 50, 35);
+    this.drawRoundWins(ctx, 50, 90, context.p1RoundWins, false);
 
-    // VS text in center
-    ctx.fillStyle = '#66fcf1';
-    ctx.font = 'italic bold 28px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('VS', GAME_WIDTH / 2, 60);
-
-    // Player 2 HUD (Right)
+    // 2. Draw Player 2 Stature (Right Side)
     this.drawHealthBar(ctx, GAME_WIDTH - 450, 45, 400, 20, context.p2.health, context.p2.maxHealth, true);
     this.drawEnergyBar(ctx, GAME_WIDTH - 350, 70, 300, 10, context.p2.energy, context.p2.maxEnergy, true);
+    
     ctx.fillStyle = '#fff';
     ctx.font = 'bold 20px sans-serif';
     ctx.textAlign = 'right';
     ctx.fillText(context.p2.name, GAME_WIDTH - 50, 35);
+    this.drawRoundWins(ctx, GAME_WIDTH - 50, 90, context.p2RoundWins, true);
 
-    // Check for KO
-    if (context.p1.state === 'DEAD' || context.p2.state === 'DEAD') {
+    // 3. Draw Timer in the top center
+    const displayTime = Math.max(0, Math.ceil(context.roundTimer / 60));
+    ctx.fillStyle = displayTime <= 10 ? '#ff3333' : '#ffffff';
+    ctx.font = 'bold 36px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(displayTime.toString(), GAME_WIDTH / 2, 45);
+
+    // 4. Draw Match Progress Overlays
+    if (context.matchState === 'COUNTDOWN') {
+      const remainingSec = Math.ceil(context.countdownTimer / 60);
+      ctx.fillStyle = '#66fcf1';
+      ctx.font = 'bold 80px sans-serif';
+      ctx.textAlign = 'center';
+      
+      const txt = remainingSec > 0 ? remainingSec.toString() : 'FIGHT!';
+      ctx.fillText(txt, GAME_WIDTH / 2, GAME_HEIGHT / 2 - 50);
+      
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 24px sans-serif';
+      ctx.fillText(`ROUND ${context.roundNumber}`, GAME_WIDTH / 2, GAME_HEIGHT / 2 - 140);
+    } else if (context.matchState === 'ROUND_END') {
       ctx.fillStyle = '#ff0055';
-      ctx.font = 'bold 72px sans-serif';
+      ctx.font = 'bold 80px sans-serif';
       ctx.textAlign = 'center';
       ctx.fillText('KO!', GAME_WIDTH / 2, GAME_HEIGHT / 2 - 50);
 
       ctx.fillStyle = '#66fcf1';
-      ctx.font = 'bold 28px sans-serif';
-      const winner = context.p1.state === 'DEAD' ? context.p2.name : context.p1.name;
-      ctx.fillText(`${winner} WINS!`, GAME_WIDTH / 2, GAME_HEIGHT / 2 + 20);
+      ctx.font = 'bold 32px sans-serif';
+      if (context.roundWinner === 'p1') {
+        ctx.fillText(`${context.p1.name} WINS THE ROUND!`, GAME_WIDTH / 2, GAME_HEIGHT / 2 + 20);
+      } else if (context.roundWinner === 'p2') {
+        ctx.fillText(`${context.p2.name} WINS THE ROUND!`, GAME_WIDTH / 2, GAME_HEIGHT / 2 + 20);
+      } else {
+        ctx.fillText('DRAW ROUND!', GAME_WIDTH / 2, GAME_HEIGHT / 2 + 20);
+      }
+    } else if (context.matchState === 'MATCH_END') {
+      ctx.fillStyle = '#66fcf1';
+      ctx.font = 'bold 64px sans-serif';
+      ctx.textAlign = 'center';
+      const winnerName = context.matchWinner === 'p1' ? context.p1.name : context.p2.name;
+      ctx.fillText(`${winnerName} WINS THE MATCH!`, GAME_WIDTH / 2, GAME_HEIGHT / 2 - 40);
+
+      ctx.fillStyle = '#fff';
+      ctx.font = '20px sans-serif';
+      ctx.fillText('Match Ended. Refresh to Restart.', GAME_WIDTH / 2, GAME_HEIGHT / 2 + 30);
     }
 
-    // Display Instruction
+    // 5. Draw Combo Counters
+    if (context.p1.comboCount > 1) {
+      ctx.fillStyle = '#ff80aa';
+      ctx.font = 'italic bold 24px sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText(`${context.p1.comboCount} HITS!`, 60, 130);
+    }
+    if (context.p2.comboCount > 1) {
+      ctx.fillStyle = '#80b3ff';
+      ctx.font = 'italic bold 24px sans-serif';
+      ctx.textAlign = 'right';
+      ctx.fillText(`${context.p2.comboCount} HITS!`, GAME_WIDTH - 60, 130);
+    }
+
+    // 6. Draw Instruction footer
     ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
-    ctx.font = '14px sans-serif';
+    ctx.font = '12px sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText(
-      'P1: A/D Move, W Jump, S Crouch, I Block, J Light Attack, K Heavy Attack | P2: Arrows, Digit4 Block, Num1/Digit1 Light, Num2/Digit2 Heavy | Toggle Debug: F3',
+      'P1: A/D Walk, W Jump, S Crouch, I Block, J Light, K Heavy, L Special (Cost 30), U Grab | P2: Arrows, Digit4 Block, Digit1 Light, Digit2 Heavy, Digit3 Special, Digit5 Grab | Toggle Debug: F3',
       GAME_WIDTH / 2,
-      GAME_HEIGHT - 25
+      GAME_HEIGHT - 15
     );
   }
 
@@ -206,7 +265,6 @@ export class Renderer {
     const ratio = Math.max(0, health / maxHealth);
     const fillWidth = w * ratio;
 
-    // Green Health overlay
     ctx.fillStyle = '#4caf50';
     if (rightToLeft) {
       ctx.fillRect(x + w - fillWidth, y, fillWidth, h);
@@ -235,7 +293,6 @@ export class Renderer {
     const ratio = Math.max(0, energy / maxEnergy);
     const fillWidth = w * ratio;
 
-    // Blue Energy overlay
     ctx.fillStyle = '#00bcd4';
     if (rightToLeft) {
       ctx.fillRect(x + w - fillWidth, y, fillWidth, h);
@@ -248,37 +305,62 @@ export class Renderer {
     ctx.strokeRect(x, y, w, h);
   }
 
+  private static drawRoundWins(ctx: CanvasRenderingContext2D, x: number, y: number, wins: number, rightToLeft: boolean) {
+    ctx.save();
+    const dotRadius = 6;
+    const spacing = 18;
+
+    for (let i = 0; i < 2; i++) {
+      const offset = rightToLeft ? -i * spacing : i * spacing;
+      ctx.beginPath();
+      ctx.arc(x + offset, y, dotRadius, 0, 2 * Math.PI);
+      
+      if (i < wins) {
+        ctx.fillStyle = '#ffb300'; // Gold circle for won round
+      } else {
+        ctx.fillStyle = '#1f2833'; // Empty circle
+      }
+      ctx.fill();
+      
+      ctx.strokeStyle = '#c5c6c7';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
   private static drawDebugOverlay(ctx: CanvasRenderingContext2D, context: GameContext, fps: number) {
     ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
-    ctx.fillRect(10, 100, 350, 240);
+    ctx.fillRect(10, 110, 360, 260);
 
     ctx.strokeStyle = '#66fcf1';
     ctx.lineWidth = 1;
-    ctx.strokeRect(10, 100, 350, 240);
+    ctx.strokeRect(10, 110, 360, 260);
 
     ctx.fillStyle = '#66fcf1';
     ctx.font = 'bold 14px monospace';
     ctx.textAlign = 'left';
-    ctx.fillText('SHADOW CLASH ENGINE DEBUG', 20, 125);
+    ctx.fillText('SHADOW CLASH ENGINE DEBUG', 20, 135);
 
     ctx.fillStyle = '#fff';
     ctx.font = '12px monospace';
-    ctx.fillText(`FPS: ${fps}`, 20, 150);
-    ctx.fillText(`Engine Tick: ${context.tickCount}`, 20, 170);
-    ctx.fillText(`Camera X: ${Math.round(context.camera.position.x)}`, 20, 190);
+    ctx.fillText(`FPS: ${fps} | Tick: ${context.tickCount}`, 20, 160);
+    ctx.fillText(`Match State: ${context.matchState} | Round: ${context.roundNumber}`, 20, 175);
+    ctx.fillText(`P1 Wins: ${context.p1RoundWins} | P2 Wins: ${context.p2RoundWins}`, 20, 190);
+    ctx.fillText(`Camera Offset: [${Math.round(context.camera.position.x)}, ${Math.round(context.camera.position.y)}]`, 20, 205);
 
-    // Player 1 coordinates
+    // Player 1 details
     ctx.fillStyle = '#ff80aa';
-    ctx.fillText(`P1 (${context.p1.name}):`, 20, 220);
-    ctx.fillText(` Pos: [${Math.round(context.p1.position.x)}, ${Math.round(context.p1.position.y)}]`, 20, 235);
-    ctx.fillText(` Vel: [${context.p1.velocity.x.toFixed(2)}, ${context.p1.velocity.y.toFixed(2)}]`, 20, 250);
-    ctx.fillText(` State: ${context.p1.state} | Timer: ${context.p1.stateTimer} | Phase: ${context.p1.attackPhase}`, 20, 265);
+    ctx.fillText(`P1 (${context.p1.name}):`, 20, 230);
+    ctx.fillText(` Pos: [${Math.round(context.p1.position.x)}, ${Math.round(context.p1.position.y)}] | State: ${context.p1.state}`, 20, 245);
+    ctx.fillText(` Vel: [${context.p1.velocity.x.toFixed(2)}, ${context.p1.velocity.y.toFixed(2)}] | Stun: ${context.p1.stateTimer}`, 20, 260);
+    ctx.fillText(` Health: ${context.p1.health} | Energy: ${context.p1.energy} | Combo: ${context.p1.comboCount}`, 20, 275);
 
-    // Player 2 coordinates
+    // Player 2 details
     ctx.fillStyle = '#80b3ff';
-    ctx.fillText(`P2 (${context.p2.name}):`, 20, 290);
-    ctx.fillText(` Pos: [${Math.round(context.p2.position.x)}, ${Math.round(context.p2.position.y)}]`, 20, 305);
-    ctx.fillText(` Vel: [${context.p2.velocity.x.toFixed(2)}, ${context.p2.velocity.y.toFixed(2)}]`, 20, 320);
-    ctx.fillText(` State: ${context.p2.state} | Timer: ${context.p2.stateTimer} | Phase: ${context.p2.attackPhase}`, 20, 335);
+    ctx.fillText(`P2 (${context.p2.name}):`, 20, 300);
+    ctx.fillText(` Pos: [${Math.round(context.p2.position.x)}, ${Math.round(context.p2.position.y)}] | State: ${context.p2.state}`, 20, 315);
+    ctx.fillText(` Vel: [${context.p2.velocity.x.toFixed(2)}, ${context.p2.velocity.y.toFixed(2)}] | Stun: ${context.p2.stateTimer}`, 20, 330);
+    ctx.fillText(` Health: ${context.p2.health} | Energy: ${context.p2.energy} | Combo: ${context.p2.comboCount}`, 20, 345);
   }
 }

@@ -19,6 +19,9 @@ export class GameLoop {
   private frameCount = 0;
   private fpsLastTime = 0;
 
+  // Round transition countdown helper (ticks)
+  private roundEndDelay = 0;
+
   constructor(ctx: CanvasRenderingContext2D, context: GameContext) {
     this.ctx = ctx;
     this.context = context;
@@ -73,15 +76,20 @@ export class GameLoop {
     const p1 = this.context.p1;
     const p2 = this.context.p2;
 
-    // 1. Poll inputs
-    const p1Inputs = this.context.inputP1.getInputs(this.context.tickCount).inputs;
-    const p2Inputs = this.context.inputP2.getInputs(this.context.tickCount).inputs;
+    // 1. Determine Input Mask based on Match State
+    let p1Inputs = { left: false, right: false, up: false, down: false, lightAttack: false, heavyAttack: false, specialAttack: false, block: false, grab: false };
+    let p2Inputs = { left: false, right: false, up: false, down: false, lightAttack: false, heavyAttack: false, specialAttack: false, block: false, grab: false };
 
-    // 2. Update player states and timers
+    if (this.context.matchState === 'FIGHTING') {
+      p1Inputs = this.context.inputP1.getInputs(this.context.tickCount).inputs;
+      p2Inputs = this.context.inputP2.getInputs(this.context.tickCount).inputs;
+    }
+
+    // 2. Update players states
     p1.update(p1Inputs, p2.position);
     p2.update(p2Inputs, p1.position);
 
-    // 3. Apply physics (Gravity and velocity update)
+    // 3. Apply physics (Gravity and velocities)
     PhysicsEngine.applyGravity(p1);
     PhysicsEngine.applyGravity(p2);
 
@@ -93,15 +101,11 @@ export class GameLoop {
     PhysicsEngine.constrainToStage(p2, STAGE_WIDTH, 720, GROUND_Y, p2.width, p2.height);
 
     // 5. Resolve body overlapping (push players apart, unless dead)
-    if (p1.state !== 'DEAD' && p2.state !== 'DEAD') {
+    if (p1.state !== 'DEAD' && p2.state !== 'DEAD' && this.context.matchState !== 'ROUND_END') {
       CollisionDetector.resolveBodyCollisions(p1, p2, STAGE_WIDTH);
     }
 
-    // 6. Attack Hit Detection
-    this.checkAttacks(p1, p2);
-    this.checkAttacks(p2, p1);
-
-    // 7. Set Facing Direction (Fighters face each other)
+    // 6. Set Facing Direction (Fighters face each other)
     if (p1.state !== 'DEAD' && p2.state !== 'DEAD') {
       if (p1.position.x + p1.width / 2 < p2.position.x + p2.width / 2) {
         p1.facingLeft = false;
@@ -110,6 +114,67 @@ export class GameLoop {
         p1.facingLeft = true;
         p2.facingLeft = false;
       }
+    }
+
+    // 7. Match State Machine Transitions
+    switch (this.context.matchState) {
+      case 'COUNTDOWN':
+        this.context.countdownTimer--;
+        if (this.context.countdownTimer <= 0) {
+          this.context.matchState = 'FIGHTING';
+          this.context.roundTimer = 99 * 60; // 99 seconds
+        }
+        break;
+
+      case 'FIGHTING':
+        this.context.roundTimer--;
+
+        // Run Hit check checks
+        this.checkAttacks(p1, p2);
+        this.checkAttacks(p2, p1);
+
+        // Check for round end trigger (KO or Timeout)
+        if (p1.health <= 0 || p2.health <= 0 || this.context.roundTimer <= 0) {
+          this.context.matchState = 'ROUND_END';
+          this.roundEndDelay = 3 * 60; // 3 seconds delay before next round/match screen
+
+          // Determine winner
+          if (p1.health === p2.health) {
+            this.context.roundWinner = null; // Draw
+          } else if (p1.health > p2.health) {
+            this.context.roundWinner = 'p1';
+            this.context.p1RoundWins++;
+          } else {
+            this.context.roundWinner = 'p2';
+            this.context.p2RoundWins++;
+          }
+        }
+        break;
+
+      case 'ROUND_END':
+        this.roundEndDelay--;
+        if (this.roundEndDelay <= 0) {
+          // Check match win condition (First to 2 wins)
+          if (this.context.p1RoundWins === 2 || this.context.p2RoundWins === 2) {
+            this.context.matchState = 'MATCH_END';
+            this.context.matchWinner = this.context.p1RoundWins === 2 ? 'p1' : 'p2';
+          } else {
+            // Setup next round
+            this.context.roundNumber++;
+            this.context.matchState = 'COUNTDOWN';
+            this.context.countdownTimer = 3 * 60;
+            this.context.roundWinner = null;
+            
+            // Reset players
+            p1.resetFighter(300, false);
+            p2.resetFighter(STAGE_WIDTH - 400, true);
+          }
+        }
+        break;
+
+      case 'MATCH_END':
+        // Locked
+        break;
     }
 
     // 8. Camera tracking update
@@ -124,28 +189,53 @@ export class GameLoop {
     const hitbox = attacker.getAttackHitbox();
     if (!hitbox || !attacker.currentAttack) return;
 
-    // Check if attack hitbox overlaps defender's body box
-    const hitRegistered = CollisionDetector.checkAABBOverlap(hitbox, defender);
+    // A hit is registered if the attack hitbox overlaps ANY of the defender's hurtboxes
+    const hurtboxes = defender.getHurtboxes();
+    let hitRegistered = false;
+
+    // Check overlaps
+    for (const hurtbox of hurtboxes) {
+      if (CollisionDetector.checkAABBOverlap(hitbox, hurtbox)) {
+        hitRegistered = true;
+        break;
+      }
+    }
+
     if (hitRegistered) {
       attacker.hasLandedHitThisAttack = true;
-
-      // Determine damage and knockback directions
       const attack = attacker.currentAttack;
-      
-      // Keep track of defender state before taking hit (to build correct energy)
-      const defenderStateBefore = defender.state;
+
+      // Handle unblockable Throws
+      if (attack.id === 'throw') {
+        defender.takeThrow(attack.damage, attack.knockback, attacker.facingLeft);
+        
+        // Refresh/Increment combo count
+        attacker.comboCount++;
+        attacker.comboTimer = 90; // 1.5 seconds combo window
+
+        attacker.energy = Math.min(attacker.maxEnergy, attacker.energy + 15);
+        defender.energy = Math.min(defender.maxEnergy, defender.energy + 10);
+        return;
+      }
+
+      // Check if blocked
       const isFacingOpponent = defender.facingLeft === !attacker.facingLeft;
-      const willBeBlocked = defenderStateBefore === 'BLOCKING' && isFacingOpponent;
+      const willBeBlocked = defender.state === 'BLOCKING' && isFacingOpponent;
 
-      defender.takeDamage(attack.damage, attack.knockback, attack.hitStun, attacker.facingLeft);
-
-      // Build energy
       if (willBeBlocked) {
-        // Successful block
+        defender.takeDamage(attack.damage, attack.knockback, attack.hitStun, attacker.facingLeft);
         defender.energy = Math.min(defender.maxEnergy, defender.energy + 8);
         attacker.energy = Math.min(attacker.maxEnergy, attacker.energy + 5);
       } else {
-        // Successful hit landed
+        // Combo scaling calculation: damage = baseDamage * (0.85 ^ comboCount)
+        const damageScale = Math.max(0.20, Math.pow(0.85, attacker.comboCount));
+        const finalDamage = Math.round(attack.damage * damageScale);
+
+        defender.takeDamage(finalDamage, attack.knockback, attack.hitStun, attacker.facingLeft);
+
+        attacker.comboCount++;
+        attacker.comboTimer = 90;
+
         attacker.energy = Math.min(attacker.maxEnergy, attacker.energy + 15);
         defender.energy = Math.min(defender.maxEnergy, defender.energy + 10);
       }

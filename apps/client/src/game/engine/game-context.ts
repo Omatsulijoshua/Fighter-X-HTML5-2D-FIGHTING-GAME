@@ -1,4 +1,4 @@
-import { Vector2D, FighterState } from '@shadow-clash/shared';
+import { Vector2D, FighterState, MatchState } from '@shadow-clash/shared';
 import { PhysicsEntity } from '../physics/physics-engine.js';
 import { CollisionBox } from '../collision/collision-detector.js';
 import { GameCamera } from '../camera/game-camera.js';
@@ -29,6 +29,16 @@ export class GameContext {
   public tickCount: number = 0;
   public debugMode: boolean = false;
   public isPaused: boolean = false;
+
+  // Round / Match System variables
+  public matchState: MatchState = 'COUNTDOWN';
+  public roundNumber: number = 1;
+  public p1RoundWins: number = 0;
+  public p2RoundWins: number = 0;
+  public roundTimer: number = 99 * 60; // 99 seconds in ticks (at 60 ticks/sec)
+  public countdownTimer: number = 3 * 60; // 3 seconds in ticks
+  public roundWinner: string | null = null;
+  public matchWinner: string | null = null;
 
   constructor() {
     this.camera = new GameCamera();
