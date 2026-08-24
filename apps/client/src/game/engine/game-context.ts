@@ -3,6 +3,7 @@ import { PhysicsEntity } from '../physics/physics-engine.js';
 import { CollisionBox } from '../collision/collision-detector.js';
 import { GameCamera } from '../camera/game-camera.js';
 import { InputManager, PLAYER_1_DEFAULT_BINDINGS, PLAYER_2_DEFAULT_BINDINGS } from '../input/input-manager.js';
+import { Fighter } from '../fighters/fighter.js';
 
 export interface GamePlayer extends PhysicsEntity, CollisionBox {
   id: string;
@@ -19,8 +20,8 @@ export const STAGE_WIDTH = 2000;
 export const GROUND_Y = 620; // Height is 720, ground floor at 620
 
 export class GameContext {
-  public p1: GamePlayer;
-  public p2: GamePlayer;
+  public p1: Fighter;
+  public p2: Fighter;
   public camera: GameCamera;
   public inputP1: InputManager;
   public inputP2: InputManager;
@@ -35,43 +36,25 @@ export class GameContext {
     this.inputP2 = new InputManager(PLAYER_2_DEFAULT_BINDINGS);
 
     // Initializing Player 1 (Fast martial artist template)
-    this.p1 = {
+    this.p1 = new Fighter({
       id: 'p1',
       name: 'KAIRO',
-      position: { x: 300, y: GROUND_Y - 250 },
-      velocity: { x: 0, y: 0 },
-      width: 100,
-      height: 250,
+      x: 300,
       weight: 1.0,
       speed: 6.0,
       jumpForce: 18.0,
-      isGrounded: false,
-      health: 100,
-      maxHealth: 100,
-      energy: 0,
-      maxEnergy: 100,
       facingLeft: false,
-      state: 'IDLE'
-    };
+    });
 
     // Initializing Player 2 (Heavy armored template)
-    this.p2 = {
+    this.p2 = new Fighter({
       id: 'p2',
       name: 'BRUTUS',
-      position: { x: STAGE_WIDTH - 400, y: GROUND_Y - 250 },
-      velocity: { x: 0, y: 0 },
-      width: 100,
-      height: 250,
+      x: STAGE_WIDTH - 400,
       weight: 1.2,
       speed: 4.5,
       jumpForce: 16.0,
-      isGrounded: false,
-      health: 100,
-      maxHealth: 100,
-      energy: 0,
-      maxEnergy: 100,
       facingLeft: true,
-      state: 'IDLE'
-    };
+    });
   }
 }
