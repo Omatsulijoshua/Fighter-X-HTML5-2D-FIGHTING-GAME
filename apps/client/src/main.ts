@@ -75,6 +75,16 @@ socket.on(SOCKET_EVENTS.ROOM_JOINED, (payload: { roomCode: string, players: any[
   context.roomCode = payload.roomCode;
   const isHost = payload.players[0].id === socket.id;
   context.multiplayerSlot = isHost ? 'p1' : 'p2';
+  context.isMultiplayer = true;
+
+  if (isHost) {
+    context.inputP2.isRemote = true;
+    context.inputP1.isRemote = false;
+  } else {
+    context.inputP1.isRemote = true;
+    context.inputP2.isRemote = false;
+  }
+
   context.matchState = 'CHARACTER_SELECT';
   context.p1CursorIndex = 0;
   context.p2CursorIndex = 1;

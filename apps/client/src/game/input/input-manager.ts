@@ -96,7 +96,17 @@ export class InputManager {
     };
   }
 
+  public isRemote: boolean = false;
+
+  public hasInputForTick(tick: number): boolean {
+    if (this.isRemote) {
+      return this.injectedInputs.has(tick);
+    }
+    return true;
+  }
+
   public clear() {
     this.keyStates.clear();
+    this.injectedInputs.clear();
   }
 }

@@ -93,6 +93,17 @@ export class GameLoop {
       return;
     }
 
+    if (this.context.matchState === 'FIGHTING') {
+      if (this.context.isMultiplayer) {
+        const hasP1 = this.context.inputP1.hasInputForTick(this.context.tickCount);
+        const hasP2 = this.context.inputP2.hasInputForTick(this.context.tickCount);
+        if (!hasP1 || !hasP2) {
+          // Freeze loop tick
+          return;
+        }
+      }
+    }
+
     this.context.tickCount++;
 
     const p1 = this.context.p1;

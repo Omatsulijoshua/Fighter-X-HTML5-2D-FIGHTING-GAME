@@ -1,7 +1,7 @@
 # Project Status - SHADOW CLASH
 
 ## Current Status
-- **Current Phase**: Phase 13: Online Character Selection (Completed)
+- **Current Phase**: Phase 14: In-game Network Synchronization (Completed)
 
 ## Completed Features
 - **Root Configuration**: Setup npm workspaces, build scripts, tsconfig defaults, and testing framework (Vitest).
@@ -11,12 +11,12 @@
 - **Admin Scaffold (`apps/admin`)**: Scaffolding Vite and admin portal dashboard foundation.
 - **Prisma Schema (`prisma/schema.prisma`)**: Modeled Postgres entities (User, Profile, Match, MatchPlayer, Leaderboard, GameSession, Ban, Report, Admin, GameSetting).
 - **Testing Foundation (`tests`)**: Vitest configuration and verification checks.
-- **Input Manager (`apps/client/src/game/input/input-manager.ts`)**: Layout-independent keyboard event polling mapped to standard player inputs for local movement. Guarded event listener setup with `typeof window` check for server safety. Added network inputs injection and lookup support.
+- **Input Manager (`apps/client/src/game/input/input-manager.ts`)**: Layout-independent keyboard event polling mapped to standard player inputs for local movement. Guarded event listener setup with `typeof window` check for server safety. Added network inputs injection and lookup support. Exposes `isRemote` status flags and `hasInputForTick()` checks.
 - **Physics Engine (`apps/client/src/game/physics/physics-engine.ts`)**: Rigid-body physics, gravity, horizontal air/ground friction, velocity clamps, and boundary clamps.
 - **Collision Detector (`apps/client/src/game/collision/collision-detector.ts`)**: AABB overlaps detection and player-push resolution including corner clamping.
 - **Game Camera (`apps/client/src/game/camera/game-camera.ts`)**: Viewport centring mid-point follow tracking with linear interpolation (lerp).
 - **Renderer (`apps/client/src/game/engine/renderer.ts`)**: Renders stages, grids, player blocks, and HUD. Shows crouch, blocks, attack hits, special glows, combo numbers, round win dots, and dead/knocked-down positions. Added active projectiles drawing support. Draws active stage graphics dynamically. Renders custom arcade overlays, maps, and retry/clear screens. Draws Main Menu with selections and glows. Renders online search waiting indicators and wait-for-host stage select panels.
-- **Fixed Timestep Loop (`apps/client/src/game/engine/game-loop.ts`)**: Logic tick accumulator running at 60Hz.
+- **Fixed Timestep Loop (`apps/client/src/game/engine/game-loop.ts`)**: Logic tick accumulator running at 60Hz. Supports delay-based loop freezing if network packets are missing during online battles.
 - **Fighter Stance (`apps/client/src/game/fighters/fighter.ts`)**: Fighter class with stats, crouches, blocks, hit flash, health, and death triggers.
 - **Hurtbox Set (`apps/client/src/game/fighters/fighter.ts`)**: Relative hurtbox definitions mapping Head, Torso, and Legs of fighters.
 - **Combat Logic (`apps/client/src/game/engine/game-loop.ts`)**: Advanced hit validation checks, energy charge mechanics, unblockable grabs (throws), and combo hit counts with 15% damage scaling.
@@ -36,26 +36,27 @@
 - **Multiplayer Matchmaking Service (`apps/server/src/matchmaking/matchmaker.ts`)**: Implemented FIFO player queue matcher generating unique random match room codes. Exposed HTTP endpoints (`GET /api/matchmaking/status`, `POST /api/matchmaking/join`, `POST /api/matchmaking/leave`) and WebSocket handlers (`matchmaking-join`, `matchmaking-leave`) that pair active sockets.
 - **Multiplayer Game Rooms System (`apps/server/src/rooms/room-manager.ts`)**: Coded a synchronized lobby rooms coordinator. Features socket triggers (`create-room`, `join-room`, `character-selected`, `stage-selected`), automatic host migration on disconnects, lobby empty purges, and real-time input-relay tunnels mapping matched connection ticks.
 - **Online Character Selection Screen (`apps/client/src/game/engine/renderer.ts`)**: Extended Main Menu to support three choices (Arcade, Versus, Online). Implemented search matching waiting screen overlays, network cursor movement synchronization relays (`character-cursor-move`), ready locks indicators, stage select wait screens for guests, and online battle input forwarders.
+- **In-game Network Synchronization (`apps/client/src/game/engine/game-loop.ts`)**: Implemented deterministic delay-based (wait-for-input) netcode synchronization that pauses tick advancement if input packets for either client slot are missing.
 
 ## Remaining Features
-- **Phase 14**: In-game network synchronization (reconciliation, state synchronization).
-- ... (Phases 15 to 16)
+- **Phase 15**: Express leaderboard API (Leaderboard models, scores routing).
+- **Phase 16**: Visual polish, asset loaders, and launch configurations.
 
 ## Known Bugs
 - None.
 
 ## Tests Performed
 1. **TypeScript compilation**: Built all packages using `npm run build`.
-2. **Unit tests**: Ran `npm run test` executing 45 tests checking shared models, physics, pushbacks, fighter hit behaviors, combat combo scaling, specials, projectiles, AI reaction delays, character select cursors, CPU selections, stage cursor cycles, stage select locks, arcade bypass selectors, stage clear advancing, game over retries, main menu cursors, versus mode select transitions, matchmaking queues, multiplayer rooms, host migrations, online menu choices, online cursor event emissions, and fighter initializations.
+2. **Unit tests**: Ran `npm run test` executing 47 tests checking shared models, physics, pushbacks, fighter hit behaviors, combat combo scaling, specials, projectiles, AI reaction delays, character select cursors, CPU selections, stage cursor cycles, stage select locks, arcade bypass selectors, stage clear advancing, game over retries, main menu cursors, versus mode select transitions, matchmaking queues, multiplayer rooms, host migrations, online menu choices, online cursor event emissions, delay-based tick freezes on missing inputs, catchup ticks, and fighter initializations.
 3. **Browser Integration**: Ran headless Chrome via Puppeteer to load `http://localhost:5173/`, checked for JS console and network errors, and verified WebSocket connection handshake.
 
 ## Test Results
 1. **TypeScript build**: Compiles cleanly with exit code 0.
-2. **Vitest unit tests**: 45/45 tests passed successfully.
+2. **Vitest unit tests**: 47/47 tests passed successfully.
 3. **Browser verification**: 0 console errors, 0 network errors. Verified stable loop ticking at 60 FPS, Socket.IO handshakes, canvas drawing, and server health.
 
 ## Next Phase
-- Phase 14: In-game Network Synchronization
+- Phase 15: Express Leaderboard API
 
 ## Important Architectural Decisions
 1. **Monorepo structure**: Using npm workspaces under `apps/*` and `packages/*` to maintain distinct deployment units (client, server, admin) and share typescript models efficiently.
@@ -75,3 +76,4 @@
 15. **Event-driven Matchmaker**: Decoupled matching pairing tickers run asynchronously from network threads, relying on Socket rooms broadcasting to handle game synchronization and room allocations.
 16. **FIFO relay netcode**: The server delegates game frame inputs dynamically between paired sockets without processing physics, minimizing server memory footprints and input latency.
 17. **Dynamic Input Injection**: Designed input slot injections inside `InputManager` supporting both local user key-polled inputs and network-relayed opponent packets within the same loop.
+18. **Delay-Based Netcode**: Selected delay-based (wait-for-input) synchronization for multiplayer matches to enforce absolute deterministic behavior and prevent player position shifts.
