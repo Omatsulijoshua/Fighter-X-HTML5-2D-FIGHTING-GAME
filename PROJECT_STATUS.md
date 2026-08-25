@@ -1,7 +1,7 @@
 # Project Status - SHADOW CLASH
 
 ## Current Status
-- **Current Phase**: Phase 7: Character Selection (Completed)
+- **Current Phase**: Phase 8: Multiple Stages (Completed)
 
 ## Completed Features
 - **Root Configuration**: Setup npm workspaces, build scripts, tsconfig defaults, and testing framework (Vitest).
@@ -15,7 +15,7 @@
 - **Physics Engine (`apps/client/src/game/physics/physics-engine.ts`)**: Rigid-body physics, gravity, horizontal air/ground friction, velocity clamps, and boundary clamps.
 - **Collision Detector (`apps/client/src/game/collision/collision-detector.ts`)**: AABB overlaps detection and player-push resolution including corner clamping.
 - **Game Camera (`apps/client/src/game/camera/game-camera.ts`)**: Viewport centring mid-point follow tracking with linear interpolation (lerp).
-- **Renderer (`apps/client/src/game/engine/renderer.ts`)**: Renders stages, grids, player blocks, and HUD. Shows crouch, blocks, attack hits, special glows, combo numbers, round win dots, and dead/knocked-down positions. Added active projectiles drawing support.
+- **Renderer (`apps/client/src/game/engine/renderer.ts`)**: Renders stages, grids, player blocks, and HUD. Shows crouch, blocks, attack hits, special glows, combo numbers, round win dots, and dead/knocked-down positions. Added active projectiles drawing support. Draws active stage graphics dynamically.
 - **Fixed Timestep Loop (`apps/client/src/game/engine/game-loop.ts`)**: Logic tick accumulator running at 60Hz.
 - **Fighter Stance (`apps/client/src/game/fighters/fighter.ts`)**: Fighter class with stats, crouches, blocks, hit flash, health, and death triggers.
 - **Hurtbox Set (`apps/client/src/game/fighters/fighter.ts`)**: Relative hurtbox definitions mapping Head, Torso, and Legs of fighters.
@@ -28,26 +28,28 @@
 - **AI Decision Engine (`apps/client/src/game/engine/ai-opponent.ts`)**: Rules-based AI routing logic driving Player 2's inputs dynamically. Supports Easy, Normal, Hard, and Expert difficulty levels.
 - **Character Selection Screen (`apps/client/src/game/engine/renderer.ts`)**: Canvas-rendered character select interface. Features horizontal statistics cards, description word wrapping, pink/blue cursor glowing boundaries, and unblockable select overlays.
 - **Selection Loop Controls (`apps/client/src/game/engine/game-loop.ts`)**: Cycle-navigation inputs with cooldown limit ticks (WASD for P1, Arrows for local P2) and random CPU locks in single-player mode. Instantiates fighters and triggers match fight countdowns.
+- **Arena Stage Selection Screen (`apps/client/src/game/engine/renderer.ts`)**: Canvas-rendered stage select selector. Draws 3 side-by-side cards representing arenas (Shadow Sanctuary, Cyber Grid, Volcanic Rift) displaying preview icons (with colors, grids, floors), selection highlights, and descriptions.
+- **Stage Selection Loops (`apps/client/src/game/engine/game-loop.ts`)**: Tracks P1's selection inputs (A/D to cycle, J to select) during the STAGE_SELECT matchState, initializing battle countdowns upon lock.
 
 ## Remaining Features
-- **Phase 8**: Multiple stages (Fighting arenas, stage selection).
-- ... (Phases 9 to 16)
+- **Phase 9**: Single-player Arcade progression ladder.
+- ... (Phases 10 to 16)
 
 ## Known Bugs
 - None.
 
 ## Tests Performed
 1. **TypeScript compilation**: Built all packages using `npm run build`.
-2. **Unit tests**: Ran `npm run test` executing 29 tests checking shared models, physics clamps, collisions pushbacks, fighter hit behaviors, combat damage scaling, specials, projectiles, AI reaction delay ticks, character select index wraps, CPU selections, and fighter initializations.
+2. **Unit tests**: Ran `npm run test` executing 31 tests checking shared models, physics, pushbacks, fighter hit behaviors, combat combo scaling, specials, projectiles, AI reaction delays, character select cursors, CPU selections, stage cursor cycles, stage select locks, and fighter initializations.
 3. **Browser Integration**: Ran headless Chrome via Puppeteer to load `http://localhost:5173/`, checked for JS console and network errors, and verified WebSocket connection handshake.
 
 ## Test Results
 1. **TypeScript build**: Compiles cleanly with exit code 0.
-2. **Vitest unit tests**: 29/29 tests passed successfully.
-3. **Browser verification**: 0 console errors, 0 network errors. Verified stable loop ticking at 60 FPS, Socket.IO handshakes, canvas drawing of Character Select screen, and P2's automated AI behaviors.
+2. **Vitest unit tests**: 31/31 tests passed successfully.
+3. **Browser verification**: 0 console errors, 0 network errors. Verified stable loop ticking at 60 FPS, Socket.IO handshakes, canvas drawing of Character Select screen, Stage Select screen, and gameplay arenas.
 
 ## Next Phase
-- Phase 8: Multiple Stages
+- Phase 9: Arcade Mode Progression
 
 ## Important Architectural Decisions
 1. **Monorepo structure**: Using npm workspaces under `apps/*` and `packages/*` to maintain distinct deployment units (client, server, admin) and share typescript models efficiently.
@@ -61,3 +63,4 @@
 9. **Attack definitions decoupling**: Decoupling default attacks into `attack-definitions.ts` resolves circular dependency loops during template instantiation.
 10. **AIOpponent isolation**: Placed the AI logic in a standalone decision component, returning virtual input masks that route seamlessly into P2 in place of physical keyboard inputs.
 11. **State Isolation**: Checked matchState inside Renderer.draw and GameLoop.tick to completely isolate character selection render and control loops from battle loops.
+12. **Stage definitions decoupling**: Decoupling stage templates into `stage-definitions.ts` keeps stage data out of the main renderer file, allowing the engine to adapt to future stages dynamically.

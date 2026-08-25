@@ -19,6 +19,7 @@ export type FighterState =
 export type MatchState =
   | 'WAITING'
   | 'CHARACTER_SELECT'
+  | 'STAGE_SELECT'
   | 'COUNTDOWN'
   | 'FIGHTING'
   | 'ROUND_END'

@@ -59,6 +59,11 @@ export class GameContext {
   public p1InputCooldown: number = 0;
   public p2InputCooldown: number = 0;
 
+  // Stage selection variables
+  public stageCursorIndex: number = 0;
+  public selectedStageId: string | null = null;
+  public stageInputCooldown: number = 0;
+
   // Single player / AI variables
   public isSinglePlayer: boolean = true;
   public aiDifficulty: 'EASY' | 'NORMAL' | 'HARD' | 'EXPERT' = 'NORMAL';

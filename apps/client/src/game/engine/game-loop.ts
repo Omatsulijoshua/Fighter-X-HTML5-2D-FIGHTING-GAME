@@ -78,6 +78,11 @@ export class GameLoop {
       return;
     }
 
+    if (this.context.matchState === 'STAGE_SELECT') {
+      this.updateStageSelection();
+      return;
+    }
+
     this.context.tickCount++;
 
     const p1 = this.context.p1;
@@ -362,15 +367,44 @@ export class GameLoop {
     }
 
     if (ctx.p1SelectedChar && ctx.p2SelectedChar) {
-      ctx.initializeFighters(ctx.p1SelectedChar, ctx.p2SelectedChar);
-      ctx.matchState = 'COUNTDOWN';
-      ctx.countdownTimer = 3 * 60;
-      ctx.roundNumber = 1;
-      ctx.p1RoundWins = 0;
-      ctx.p2RoundWins = 0;
-      ctx.roundWinner = null;
-      ctx.matchWinner = null;
-      ctx.projectiles = [];
+      ctx.matchState = 'STAGE_SELECT';
+      ctx.stageCursorIndex = 0;
+      ctx.stageInputCooldown = 12;
+    }
+  }
+
+  private updateStageSelection() {
+    const ctx = this.context;
+    const stageKeys = ['SHADOW_SANCTUARY', 'CYBER_GRID', 'VOLCANIC_RIFT'];
+
+    if (ctx.stageInputCooldown > 0) ctx.stageInputCooldown--;
+
+    const p1Inputs = ctx.inputP1.getInputs(ctx.tickCount).inputs;
+
+    if (ctx.stageInputCooldown === 0) {
+      if (p1Inputs.left) {
+        ctx.stageCursorIndex = (ctx.stageCursorIndex - 1 + 3) % 3;
+        ctx.stageInputCooldown = 12;
+      } else if (p1Inputs.right) {
+        ctx.stageCursorIndex = (ctx.stageCursorIndex + 1) % 3;
+        ctx.stageInputCooldown = 12;
+      } else if (p1Inputs.lightAttack || p1Inputs.specialAttack) {
+        ctx.selectedStageId = stageKeys[ctx.stageCursorIndex];
+        ctx.stageInputCooldown = 12;
+
+        if (ctx.p1SelectedChar && ctx.p2SelectedChar) {
+          ctx.initializeFighters(ctx.p1SelectedChar, ctx.p2SelectedChar);
+        }
+
+        ctx.matchState = 'COUNTDOWN';
+        ctx.countdownTimer = 3 * 60;
+        ctx.roundNumber = 1;
+        ctx.p1RoundWins = 0;
+        ctx.p2RoundWins = 0;
+        ctx.roundWinner = null;
+        ctx.matchWinner = null;
+        ctx.projectiles = [];
+      }
     }
   }
 }

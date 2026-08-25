@@ -2,17 +2,30 @@ import { GAME_WIDTH, GAME_HEIGHT } from '@shadow-clash/shared';
 import { GameContext, STAGE_WIDTH, GROUND_Y, GameProjectile } from './game-context.js';
 import { Fighter } from '../fighters/fighter.js';
 import { FIGHTER_TEMPLATES } from '../fighters/fighter-definitions.js';
+import { STAGE_TEMPLATES } from '../stages/stage-definitions.js';
 
 export class Renderer {
   public static draw(ctx: CanvasRenderingContext2D, context: GameContext, fps: number) {
-    // 1. Clear Canvas
-    ctx.fillStyle = '#0b0c10';
-    ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
-
     if (context.matchState === 'CHARACTER_SELECT') {
+      ctx.fillStyle = '#0b0c10';
+      ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
       this.drawCharacterSelect(ctx, context);
       return;
     }
+
+    if (context.matchState === 'STAGE_SELECT') {
+      ctx.fillStyle = '#0b0c10';
+      ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+      this.drawStageSelect(ctx, context);
+      return;
+    }
+
+    const activeStageKey = context.selectedStageId || 'SHADOW_SANCTUARY';
+    const stage = STAGE_TEMPLATES[activeStageKey];
+
+    // Clear Canvas
+    ctx.fillStyle = stage.bgColor;
+    ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
 
     // Save context for camera translation
     ctx.save();
@@ -21,9 +34,9 @@ export class Renderer {
     ctx.translate(-context.camera.position.x, -context.camera.position.y);
 
     // 2. Draw Stage Background Grid
-    ctx.strokeStyle = '#1f2833';
+    ctx.strokeStyle = stage.gridColor + '33';
     ctx.lineWidth = 1;
-    const gridSize = 40;
+    const gridSize = stage.gridSize;
     for (let x = 0; x < STAGE_WIDTH; x += gridSize) {
       ctx.beginPath();
       ctx.moveTo(x, 0);
@@ -38,20 +51,28 @@ export class Renderer {
     }
 
     // 3. Draw Stage Boundaries
-    ctx.fillStyle = 'rgba(255, 0, 0, 0.1)';
+    ctx.fillStyle = stage.gridColor + '1a';
     ctx.fillRect(-10, 0, 10, GAME_HEIGHT);
     ctx.fillRect(STAGE_WIDTH, 0, 10, GAME_HEIGHT);
 
     // 4. Draw Floor
-    ctx.strokeStyle = '#45f3ff';
+    ctx.strokeStyle = stage.floorColor;
     ctx.lineWidth = 4;
     ctx.beginPath();
     ctx.moveTo(0, GROUND_Y);
     ctx.lineTo(STAGE_WIDTH, GROUND_Y);
     ctx.stroke();
 
-    ctx.fillStyle = 'rgba(31, 40, 51, 0.5)';
+    ctx.fillStyle = stage.bgColor;
     ctx.fillRect(0, GROUND_Y, STAGE_WIDTH, GAME_HEIGHT - GROUND_Y);
+
+    ctx.strokeStyle = stage.gridColor + '22';
+    for (let x = 0; x < STAGE_WIDTH; x += gridSize) {
+      ctx.beginPath();
+      ctx.moveTo(x, GROUND_Y);
+      ctx.lineTo(x, GAME_HEIGHT);
+      ctx.stroke();
+    }
 
     // 5. Draw Players
     this.drawPlayer(ctx, context.p1, '#ff0055', context.debugMode);
@@ -392,6 +413,103 @@ export class Renderer {
       ctx.fillRect(tailX, proj.position.y + 4, 15, proj.height - 8);
     }
     ctx.restore();
+  }
+
+  private static drawStageSelect(ctx: CanvasRenderingContext2D, context: GameContext) {
+    // Title
+    ctx.fillStyle = '#66fcf1';
+    ctx.font = 'bold 36px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('SHADOW CLASH - STAGE SELECT', GAME_WIDTH / 2, 80);
+
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+    ctx.font = '16px sans-serif';
+    ctx.fillText('P1: Use A/D to cycle, J to select Arena', GAME_WIDTH / 2, 120);
+
+    const stageKeys = ['SHADOW_SANCTUARY', 'CYBER_GRID', 'VOLCANIC_RIFT'];
+    const cardWidth = 280;
+    const cardHeight = 320;
+    const spacing = 40;
+    const totalWidth = (cardWidth * 3) + (spacing * 2);
+    const startX = (GAME_WIDTH - totalWidth) / 2;
+    const startY = 190;
+
+    for (let i = 0; i < 3; i++) {
+      const stageKey = stageKeys[i];
+      const template = STAGE_TEMPLATES[stageKey];
+      const cardX = startX + i * (cardWidth + spacing);
+
+      // Draw background
+      ctx.fillStyle = '#1f2833';
+      ctx.fillRect(cardX, startY, cardWidth, cardHeight);
+
+      // Card Border
+      ctx.strokeStyle = '#45f3ff';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(cardX, startY, cardWidth, cardHeight);
+
+      // Cursor Highlight border
+      const isSelected = context.stageCursorIndex === i;
+      if (isSelected) {
+        ctx.strokeStyle = '#ff0055'; // Pink glowing border
+        ctx.lineWidth = 4;
+        ctx.strokeRect(cardX - 4, startY - 4, cardWidth + 8, cardHeight + 8);
+
+        ctx.fillStyle = '#ff0055';
+        ctx.font = 'bold 16px sans-serif';
+        ctx.fillText('SELECTING', cardX + cardWidth / 2, startY - 15);
+      }
+
+      // Stage Title
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 20px sans-serif';
+      ctx.fillText(template.name, cardX + cardWidth / 2, startY + 50);
+
+      // Description text wrapping
+      ctx.fillStyle = '#c5c6c7';
+      ctx.font = '13px sans-serif';
+      
+      const words = template.description.split(' ');
+      let line = '';
+      let lineY = startY + 100;
+      for (const word of words) {
+        const testLine = line + word + ' ';
+        const metrics = ctx.measureText(testLine);
+        if (metrics.width > cardWidth - 30) {
+          ctx.fillText(line, cardX + cardWidth / 2, lineY);
+          line = word + ' ';
+          lineY += 18;
+        } else {
+          line = testLine;
+        }
+      }
+      ctx.fillText(line, cardX + cardWidth / 2, lineY);
+
+      // Simple visual icon representation (colored mini-boxes representing the stage style)
+      const visualY = startY + 220;
+      
+      // Draw background block
+      ctx.fillStyle = template.bgColor;
+      ctx.fillRect(cardX + 30, visualY, cardWidth - 60, 60);
+
+      // Draw grid lines inside mini-box
+      ctx.strokeStyle = template.gridColor + '66';
+      ctx.lineWidth = 1;
+      const step = 15;
+      for (let gx = cardX + 30; gx < cardX + cardWidth - 30; gx += step) {
+        ctx.beginPath();
+        ctx.moveTo(gx, visualY);
+        ctx.lineTo(gx, visualY + 60);
+        ctx.stroke();
+      }
+      // Floor line
+      ctx.strokeStyle = template.floorColor;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(cardX + 30, visualY + 45);
+      ctx.lineTo(cardX + cardWidth - 30, visualY + 45);
+      ctx.stroke();
+    }
   }
 
   private static drawCharacterSelect(ctx: CanvasRenderingContext2D, context: GameContext) {
