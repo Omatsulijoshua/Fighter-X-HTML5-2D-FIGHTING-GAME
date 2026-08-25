@@ -49,7 +49,7 @@ import puppeteer from 'puppeteer';
   console.log('Page loaded, waiting 5 seconds for connection and canvas rendering...');
   await new Promise(resolve => setTimeout(resolve, 5000));
 
-  const screenshotPath = "C:\\Users\\SirBill's\\.gemini\\antigravity\\brain\\5edd0d75-1757-48f4-bc21-7bb7d7005d58\\phase11_screenshot.png";
+  const screenshotPath = "C:\\Users\\SirBill's\\.gemini\\antigravity\\brain\\5edd0d75-1757-48f4-bc21-7bb7d7005d58\\phase12_screenshot.png";
   console.log(`Taking screenshot and saving to: ${screenshotPath}`);
   await page.screenshot({ path: screenshotPath });
 

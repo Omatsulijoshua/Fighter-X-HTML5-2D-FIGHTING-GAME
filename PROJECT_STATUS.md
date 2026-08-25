@@ -1,7 +1,7 @@
 # Project Status - SHADOW CLASH
 
 ## Current Status
-- **Current Phase**: Phase 11: Matchmaking API (Completed)
+- **Current Phase**: Phase 12: Multiplayer Rooms (Completed)
 
 ## Completed Features
 - **Root Configuration**: Setup npm workspaces, build scripts, tsconfig defaults, and testing framework (Vitest).
@@ -34,26 +34,27 @@
 - **Landing Main Menu Screen (`apps/client/src/game/engine/renderer.ts`)**: Designed canvas-rendered main landing selection menu supporting up/down scrolling selection inputs (W/S to cycle, J to lock) toggling between Arcade Mode (SP) and Versus Mode (Local 2P).
 - **Match Scoreboard Menu Reset (`apps/client/src/game/engine/game-loop.ts`)**: Enabled resetting games directly back to the Main Menu when P1 presses Light Attack on match end scoreboards.
 - **Multiplayer Matchmaking Service (`apps/server/src/matchmaking/matchmaker.ts`)**: Implemented FIFO player queue matcher generating unique random match room codes. Exposed HTTP endpoints (`GET /api/matchmaking/status`, `POST /api/matchmaking/join`, `POST /api/matchmaking/leave`) and WebSocket handlers (`matchmaking-join`, `matchmaking-leave`) that pair active sockets.
+- **Multiplayer Game Rooms System (`apps/server/src/rooms/room-manager.ts`)**: Coded a synchronized lobby rooms coordinator. Features socket triggers (`create-room`, `join-room`, `character-selected`, `stage-selected`), automatic host migration on disconnects, lobby empty purges, and real-time input-relay tunnels mapping matched connection ticks.
 
 ## Remaining Features
-- **Phase 12**: Multiplayer Game Rooms (Active rooms tracking, inputs propagation).
-- ... (Phases 13 to 16)
+- **Phase 13**: Online character selection (network selection updates, ready locking).
+- ... (Phases 14 to 16)
 
 ## Known Bugs
 - None.
 
 ## Tests Performed
 1. **TypeScript compilation**: Built all packages using `npm run build`.
-2. **Unit tests**: Ran `npm run test` executing 40 tests checking shared models, physics, pushbacks, fighter hit behaviors, combat combo scaling, specials, projectiles, AI reaction delays, character select cursors, CPU selections, stage cursor cycles, stage select locks, arcade bypass selectors, stage clear advancing, game over retries, main menu cursors, versus mode select transitions, matchmaking queue additions, duplicate queue blocks, matchmaking queue leaves, matchmaking pairs, and fighter initializations.
+2. **Unit tests**: Ran `npm run test` executing 43 tests checking shared models, physics, pushbacks, fighter hit behaviors, combat combo scaling, specials, projectiles, AI reaction delays, character select cursors, CPU selections, stage cursor cycles, stage select locks, arcade bypass selectors, stage clear advancing, game over retries, main menu cursors, versus mode select transitions, matchmaking queue additions, duplicate queue blocks, matchmaking queue leaves, matchmaking pairs, host migrations, multiplayer lobby allocations, guest limits, disconnect purges, and fighter initializations.
 3. **Browser Integration**: Ran headless Chrome via Puppeteer to load `http://localhost:5173/`, checked for JS console and network errors, and verified WebSocket connection handshake.
 
 ## Test Results
 1. **TypeScript build**: Compiles cleanly with exit code 0.
-2. **Vitest unit tests**: 40/40 tests passed successfully.
+2. **Vitest unit tests**: 43/43 tests passed successfully.
 3. **Browser verification**: 0 console errors, 0 network errors. Verified stable loop ticking at 60 FPS, Socket.IO handshakes, canvas drawing, and server health.
 
 ## Next Phase
-- Phase 12: Multiplayer Game Rooms
+- Phase 13: Online Character Selection
 
 ## Important Architectural Decisions
 1. **Monorepo structure**: Using npm workspaces under `apps/*` and `packages/*` to maintain distinct deployment units (client, server, admin) and share typescript models efficiently.
@@ -71,3 +72,4 @@
 13. **Arcade Progression Interception**: Overlay states (`arcadeCleared` and `arcadeGameOver`) intercept standard tick cycles at the start of `tick()`, allowing dedicated input queries for menu navigation (retrying and advancing) before physics and combat evaluate.
 14. **State Machine Rooting**: Introducing `MAIN_MENU` at the beginning of the `MatchState` lifecycle cleanly coordinates game mode properties, player control assignments, and post-game score resets.
 15. **Event-driven Matchmaker**: Decoupled matching pairing tickers run asynchronously from network threads, relying on Socket rooms broadcasting to handle game synchronization and room allocations.
+16. **FIFO relay netcode**: The server delegates game frame inputs dynamically between paired sockets without processing physics, minimizing server memory footprints and input latency.
