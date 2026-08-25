@@ -68,6 +68,12 @@ export class GameContext {
   public isSinglePlayer: boolean = true;
   public aiDifficulty: 'EASY' | 'NORMAL' | 'HARD' | 'EXPERT' = 'NORMAL';
 
+  // Arcade mode variables
+  public isArcadeMode: boolean = false;
+  public arcadeStage: number = 1;
+  public arcadeCleared: boolean = false;
+  public arcadeGameOver: boolean = false;
+
   // Projectile tracking
   public projectiles: GameProjectile[] = [];
 
@@ -121,5 +127,15 @@ export class GameContext {
     });
     this.p1.onSpawnProjectile = (proj) => this.spawnProjectile(proj);
     this.p2.onSpawnProjectile = (proj) => this.spawnProjectile(proj);
+  }
+
+  public resetArcade() {
+    this.arcadeStage = 1;
+    this.arcadeCleared = false;
+    this.arcadeGameOver = false;
+    this.matchState = 'CHARACTER_SELECT';
+    this.p1SelectedChar = null;
+    this.p2SelectedChar = null;
+    this.selectedStageId = null;
   }
 }

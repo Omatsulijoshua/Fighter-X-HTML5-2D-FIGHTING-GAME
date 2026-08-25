@@ -73,6 +73,11 @@ export class GameLoop {
   private tick() {
     if (this.context.isPaused) return;
 
+    if (this.context.arcadeCleared || this.context.arcadeGameOver) {
+      this.updateArcadeOverlays();
+      return;
+    }
+
     if (this.context.matchState === 'CHARACTER_SELECT') {
       this.updateCharacterSelection();
       return;
@@ -179,8 +184,20 @@ export class GameLoop {
         this.roundEndDelay--;
         if (this.roundEndDelay <= 0) {
           if (this.context.p1RoundWins === 2 || this.context.p2RoundWins === 2) {
-            this.context.matchState = 'MATCH_END';
-            this.context.matchWinner = this.context.p1RoundWins === 2 ? 'p1' : 'p2';
+            if (this.context.isArcadeMode) {
+              if (this.context.p1RoundWins === 2) {
+                this.context.arcadeCleared = true;
+                if (this.context.arcadeStage === 4) {
+                  this.context.matchState = 'MATCH_END';
+                  this.context.matchWinner = 'p1';
+                }
+              } else {
+                this.context.arcadeGameOver = true;
+              }
+            } else {
+              this.context.matchState = 'MATCH_END';
+              this.context.matchWinner = this.context.p1RoundWins === 2 ? 'p1' : 'p2';
+            }
           } else {
             this.context.roundNumber++;
             this.context.matchState = 'COUNTDOWN';
@@ -366,10 +383,32 @@ export class GameLoop {
       }
     }
 
-    if (ctx.p1SelectedChar && ctx.p2SelectedChar) {
-      ctx.matchState = 'STAGE_SELECT';
-      ctx.stageCursorIndex = 0;
-      ctx.stageInputCooldown = 12;
+    if (ctx.p1SelectedChar) {
+      if (ctx.isArcadeMode) {
+        const idx = ctx.arcadeStage - 1;
+        const cpuOpponents = ['KAIRO', 'NYX', 'RAZOR', 'BRUTUS'];
+        const cpuStages = ['SHADOW_SANCTUARY', 'CYBER_GRID', 'VOLCANIC_RIFT', 'VOLCANIC_RIFT'];
+        const cpuDiffs = ['EASY', 'NORMAL', 'HARD', 'EXPERT'] as const;
+
+        ctx.p2SelectedChar = cpuOpponents[idx];
+        ctx.selectedStageId = cpuStages[idx];
+        ctx.aiDifficulty = cpuDiffs[idx];
+
+        ctx.initializeFighters(ctx.p1SelectedChar, ctx.p2SelectedChar);
+
+        ctx.matchState = 'COUNTDOWN';
+        ctx.countdownTimer = 3 * 60;
+        ctx.roundNumber = 1;
+        ctx.p1RoundWins = 0;
+        ctx.p2RoundWins = 0;
+        ctx.roundWinner = null;
+        ctx.matchWinner = null;
+        ctx.projectiles = [];
+      } else if (ctx.p2SelectedChar) {
+        ctx.matchState = 'STAGE_SELECT';
+        ctx.stageCursorIndex = 0;
+        ctx.stageInputCooldown = 12;
+      }
     }
   }
 
@@ -391,6 +430,59 @@ export class GameLoop {
       } else if (p1Inputs.lightAttack || p1Inputs.specialAttack) {
         ctx.selectedStageId = stageKeys[ctx.stageCursorIndex];
         ctx.stageInputCooldown = 12;
+
+        if (ctx.p1SelectedChar && ctx.p2SelectedChar) {
+          ctx.initializeFighters(ctx.p1SelectedChar, ctx.p2SelectedChar);
+        }
+
+        ctx.matchState = 'COUNTDOWN';
+        ctx.countdownTimer = 3 * 60;
+        ctx.roundNumber = 1;
+        ctx.p1RoundWins = 0;
+        ctx.p2RoundWins = 0;
+        ctx.roundWinner = null;
+        ctx.matchWinner = null;
+        ctx.projectiles = [];
+      }
+    }
+  }
+
+  private updateArcadeOverlays() {
+    const ctx = this.context;
+    const p1Inputs = ctx.inputP1.getInputs(ctx.tickCount).inputs;
+
+    if (p1Inputs.lightAttack || p1Inputs.specialAttack) {
+      if (ctx.arcadeCleared) {
+        ctx.arcadeCleared = false;
+
+        if (ctx.arcadeStage < 4) {
+          ctx.arcadeStage++;
+          const idx = ctx.arcadeStage - 1;
+          const cpuOpponents = ['KAIRO', 'NYX', 'RAZOR', 'BRUTUS'];
+          const cpuStages = ['SHADOW_SANCTUARY', 'CYBER_GRID', 'VOLCANIC_RIFT', 'VOLCANIC_RIFT'];
+          const cpuDiffs = ['EASY', 'NORMAL', 'HARD', 'EXPERT'] as const;
+
+          ctx.p2SelectedChar = cpuOpponents[idx];
+          ctx.selectedStageId = cpuStages[idx];
+          ctx.aiDifficulty = cpuDiffs[idx];
+
+          if (ctx.p1SelectedChar && ctx.p2SelectedChar) {
+            ctx.initializeFighters(ctx.p1SelectedChar, ctx.p2SelectedChar);
+          }
+
+          ctx.matchState = 'COUNTDOWN';
+          ctx.countdownTimer = 3 * 60;
+          ctx.roundNumber = 1;
+          ctx.p1RoundWins = 0;
+          ctx.p2RoundWins = 0;
+          ctx.roundWinner = null;
+          ctx.matchWinner = null;
+          ctx.projectiles = [];
+        } else {
+          ctx.resetArcade();
+        }
+      } else if (ctx.arcadeGameOver) {
+        ctx.arcadeGameOver = false;
 
         if (ctx.p1SelectedChar && ctx.p2SelectedChar) {
           ctx.initializeFighters(ctx.p1SelectedChar, ctx.p2SelectedChar);

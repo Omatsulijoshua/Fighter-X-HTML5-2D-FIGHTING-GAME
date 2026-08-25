@@ -251,7 +251,14 @@ export class Renderer {
 
       ctx.fillStyle = '#fff';
       ctx.font = '20px sans-serif';
-      ctx.fillText('Match Ended. Refresh to Restart.', GAME_WIDTH / 2, GAME_HEIGHT / 2 + 30);
+      if (context.isArcadeMode && context.matchWinner === 'p1') {
+        ctx.fillText('ARCADE CHAMPIONSHIP CONQUERED!', GAME_WIDTH / 2, GAME_HEIGHT / 2 + 20);
+        ctx.fillStyle = '#66fcf1';
+        ctx.font = 'bold 24px sans-serif';
+        ctx.fillText('Press J to Play Again', GAME_WIDTH / 2, GAME_HEIGHT / 2 + 80);
+      } else {
+        ctx.fillText('Match Ended. Refresh to Restart.', GAME_WIDTH / 2, GAME_HEIGHT / 2 + 30);
+      }
     }
 
     // 5. Draw Combo Counters
@@ -277,6 +284,59 @@ export class Renderer {
       GAME_WIDTH / 2,
       GAME_HEIGHT - 15
     );
+
+    // Arcade Overlays
+    if (context.isArcadeMode) {
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+      ctx.fillRect(GAME_WIDTH / 2 - 120, 75, 240, 25);
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 11px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(
+        `ARCADE PROGRESS: MATCH ${context.arcadeStage} OF 4`,
+        GAME_WIDTH / 2,
+        91
+      );
+
+      if (context.arcadeCleared) {
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+        ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+
+        ctx.fillStyle = '#66fcf1';
+        ctx.font = 'bold 48px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('ARCADE MATCH CLEARED!', GAME_WIDTH / 2, GAME_HEIGHT / 2 - 60);
+
+        ctx.fillStyle = '#fff';
+        ctx.font = '22px sans-serif';
+        if (context.arcadeStage < 4) {
+          ctx.fillText(`Defeated ${context.p2.name}!`, GAME_WIDTH / 2, GAME_HEIGHT / 2 - 10);
+          ctx.fillStyle = '#ff0055';
+          ctx.font = 'bold 24px sans-serif';
+          ctx.fillText('Press J to Advance to Next Match', GAME_WIDTH / 2, GAME_HEIGHT / 2 + 50);
+        } else {
+          ctx.fillText('CONGRATULATIONS CHAMPION!', GAME_WIDTH / 2, GAME_HEIGHT / 2 - 10);
+          ctx.fillText('You have conquered SHADOW CLASH Arcade Mode!', GAME_WIDTH / 2, GAME_HEIGHT / 2 + 30);
+          ctx.fillStyle = '#66fcf1';
+          ctx.font = 'bold 24px sans-serif';
+          ctx.fillText('Press J to Reset and Play Again', GAME_WIDTH / 2, GAME_HEIGHT / 2 + 90);
+        }
+      }
+
+      if (context.arcadeGameOver) {
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+        ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+
+        ctx.fillStyle = '#ff0055';
+        ctx.font = 'bold 64px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('GAME OVER', GAME_WIDTH / 2, GAME_HEIGHT / 2 - 40);
+
+        ctx.fillStyle = '#fff';
+        ctx.font = '24px sans-serif';
+        ctx.fillText('Press J to Insert Coin & Retry Match', GAME_WIDTH / 2, GAME_HEIGHT / 2 + 30);
+      }
+    }
   }
 
   private static drawHealthBar(
