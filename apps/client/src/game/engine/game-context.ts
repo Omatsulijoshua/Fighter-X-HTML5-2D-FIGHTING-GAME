@@ -42,7 +42,7 @@ export class GameContext {
   public isPaused: boolean = false;
 
   // Round / Match variables
-  public matchState: MatchState = 'COUNTDOWN';
+  public matchState: MatchState = 'CHARACTER_SELECT';
   public roundNumber: number = 1;
   public p1RoundWins: number = 0;
   public p2RoundWins: number = 0;
@@ -50,6 +50,14 @@ export class GameContext {
   public countdownTimer: number = 3 * 60;
   public roundWinner: string | null = null;
   public matchWinner: string | null = null;
+
+  // Character selection variables
+  public p1CursorIndex: number = 0;
+  public p2CursorIndex: number = 1;
+  public p1SelectedChar: string | null = null;
+  public p2SelectedChar: string | null = null;
+  public p1InputCooldown: number = 0;
+  public p2InputCooldown: number = 0;
 
   // Single player / AI variables
   public isSinglePlayer: boolean = true;
@@ -93,5 +101,20 @@ export class GameContext {
       active: true
     });
     console.log(`Projectile spawned by ${proj.ownerId} at [${proj.x}, ${proj.y}]`);
+  }
+
+  public initializeFighters(p1Char: string, p2Char: string) {
+    this.p1 = new Fighter(FIGHTER_TEMPLATES[p1Char], {
+      id: 'p1',
+      x: 300,
+      facingLeft: false,
+    });
+    this.p2 = new Fighter(FIGHTER_TEMPLATES[p2Char], {
+      id: 'p2',
+      x: STAGE_WIDTH - 400,
+      facingLeft: true,
+    });
+    this.p1.onSpawnProjectile = (proj) => this.spawnProjectile(proj);
+    this.p2.onSpawnProjectile = (proj) => this.spawnProjectile(proj);
   }
 }

@@ -73,6 +73,11 @@ export class GameLoop {
   private tick() {
     if (this.context.isPaused) return;
 
+    if (this.context.matchState === 'CHARACTER_SELECT') {
+      this.updateCharacterSelection();
+      return;
+    }
+
     this.context.tickCount++;
 
     const p1 = this.context.p1;
@@ -310,6 +315,62 @@ export class GameLoop {
           projectiles.splice(i, 1);
         }
       }
+    }
+  }
+
+  private updateCharacterSelection() {
+    const ctx = this.context;
+    const fighterKeys = ['KAIRO', 'BRUTUS', 'NYX', 'RAZOR'];
+
+    // Decrement input cooldowns
+    if (ctx.p1InputCooldown > 0) ctx.p1InputCooldown--;
+    if (ctx.p2InputCooldown > 0) ctx.p2InputCooldown--;
+
+    const p1Inputs = ctx.inputP1.getInputs(ctx.tickCount).inputs;
+
+    if (!ctx.p1SelectedChar && ctx.p1InputCooldown === 0) {
+      if (p1Inputs.left) {
+        ctx.p1CursorIndex = (ctx.p1CursorIndex - 1 + 4) % 4;
+        ctx.p1InputCooldown = 12;
+      } else if (p1Inputs.right) {
+        ctx.p1CursorIndex = (ctx.p1CursorIndex + 1) % 4;
+        ctx.p1InputCooldown = 12;
+      } else if (p1Inputs.lightAttack || p1Inputs.specialAttack) {
+        ctx.p1SelectedChar = fighterKeys[ctx.p1CursorIndex];
+        ctx.p1InputCooldown = 12;
+
+        if (ctx.isSinglePlayer) {
+          const cpuIdx = Math.floor(Math.random() * 4);
+          ctx.p2CursorIndex = cpuIdx;
+          ctx.p2SelectedChar = fighterKeys[cpuIdx];
+        }
+      }
+    }
+
+    if (!ctx.isSinglePlayer && !ctx.p2SelectedChar && ctx.p2InputCooldown === 0) {
+      const p2Inputs = ctx.inputP2.getInputs(ctx.tickCount).inputs;
+      if (p2Inputs.left) {
+        ctx.p2CursorIndex = (ctx.p2CursorIndex - 1 + 4) % 4;
+        ctx.p2InputCooldown = 12;
+      } else if (p2Inputs.right) {
+        ctx.p2CursorIndex = (ctx.p2CursorIndex + 1) % 4;
+        ctx.p2InputCooldown = 12;
+      } else if (p2Inputs.lightAttack || p2Inputs.specialAttack) {
+        ctx.p2SelectedChar = fighterKeys[ctx.p2CursorIndex];
+        ctx.p2InputCooldown = 12;
+      }
+    }
+
+    if (ctx.p1SelectedChar && ctx.p2SelectedChar) {
+      ctx.initializeFighters(ctx.p1SelectedChar, ctx.p2SelectedChar);
+      ctx.matchState = 'COUNTDOWN';
+      ctx.countdownTimer = 3 * 60;
+      ctx.roundNumber = 1;
+      ctx.p1RoundWins = 0;
+      ctx.p2RoundWins = 0;
+      ctx.roundWinner = null;
+      ctx.matchWinner = null;
+      ctx.projectiles = [];
     }
   }
 }

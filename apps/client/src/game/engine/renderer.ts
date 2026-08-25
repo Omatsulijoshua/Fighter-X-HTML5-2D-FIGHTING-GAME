@@ -1,12 +1,18 @@
 import { GAME_WIDTH, GAME_HEIGHT } from '@shadow-clash/shared';
 import { GameContext, STAGE_WIDTH, GROUND_Y, GameProjectile } from './game-context.js';
 import { Fighter } from '../fighters/fighter.js';
+import { FIGHTER_TEMPLATES } from '../fighters/fighter-definitions.js';
 
 export class Renderer {
   public static draw(ctx: CanvasRenderingContext2D, context: GameContext, fps: number) {
     // 1. Clear Canvas
     ctx.fillStyle = '#0b0c10';
     ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+
+    if (context.matchState === 'CHARACTER_SELECT') {
+      this.drawCharacterSelect(ctx, context);
+      return;
+    }
 
     // Save context for camera translation
     ctx.save();
@@ -386,5 +392,147 @@ export class Renderer {
       ctx.fillRect(tailX, proj.position.y + 4, 15, proj.height - 8);
     }
     ctx.restore();
+  }
+
+  private static drawCharacterSelect(ctx: CanvasRenderingContext2D, context: GameContext) {
+    // Title
+    ctx.fillStyle = '#66fcf1';
+    ctx.font = 'bold 36px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('SHADOW CLASH - CHARACTER SELECT', GAME_WIDTH / 2, 80);
+
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+    ctx.font = '16px sans-serif';
+    ctx.fillText(
+      context.isSinglePlayer 
+        ? 'P1: Use A/D to cycle, J to select' 
+        : 'P1: A/D & J to select | P2: Left/Right & Num1 to select',
+      GAME_WIDTH / 2,
+      120
+    );
+
+    const fighterKeys = ['KAIRO', 'BRUTUS', 'NYX', 'RAZOR'];
+    const cardWidth = 220;
+    const cardHeight = 360;
+    const spacing = 40;
+    const totalWidth = (cardWidth * 4) + (spacing * 3);
+    const startX = (GAME_WIDTH - totalWidth) / 2;
+    const startY = 180;
+
+    for (let i = 0; i < 4; i++) {
+      const charKey = fighterKeys[i];
+      const template = FIGHTER_TEMPLATES[charKey];
+      const cardX = startX + i * (cardWidth + spacing);
+      
+      // Card Background
+      ctx.fillStyle = '#1f2833';
+      ctx.fillRect(cardX, startY, cardWidth, cardHeight);
+
+      // Card Border
+      ctx.strokeStyle = '#45f3ff';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(cardX, startY, cardWidth, cardHeight);
+
+      // Draw Cursor borders
+      const isP1Cursor = context.p1CursorIndex === i;
+      const isP2Cursor = context.p2CursorIndex === i;
+
+      if (isP1Cursor) {
+        ctx.strokeStyle = '#ff0055'; // P1 Pink
+        ctx.lineWidth = 4;
+        ctx.strokeRect(cardX - 4, startY - 4, cardWidth + 8, cardHeight + 8);
+
+        ctx.fillStyle = '#ff0055';
+        ctx.font = 'bold 16px sans-serif';
+        ctx.fillText('P1', cardX + cardWidth / 2, startY - 15);
+      }
+
+      if (isP2Cursor && !context.isSinglePlayer) {
+        ctx.strokeStyle = '#0055ff'; // P2 Blue
+        ctx.lineWidth = 4;
+        ctx.strokeRect(cardX - 8, startY - 8, cardWidth + 16, cardHeight + 16);
+
+        ctx.fillStyle = '#0055ff';
+        ctx.font = 'bold 16px sans-serif';
+        ctx.fillText('P2', cardX + cardWidth / 2, startY + cardHeight + 25);
+      }
+
+      // Draw Character Card info
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 22px sans-serif';
+      ctx.fillText(template.name, cardX + cardWidth / 2, startY + 45);
+
+      // Description text wrapping helper
+      ctx.fillStyle = '#c5c6c7';
+      ctx.font = '12px sans-serif';
+      
+      // Simple word wrapping
+      const words = template.description.split(' ');
+      let line = '';
+      let lineY = startY + 80;
+      for (const word of words) {
+        const testLine = line + word + ' ';
+        const metrics = ctx.measureText(testLine);
+        if (metrics.width > cardWidth - 20) {
+          ctx.fillText(line, cardX + cardWidth / 2, lineY);
+          line = word + ' ';
+          lineY += 15;
+        } else {
+          line = testLine;
+        }
+      }
+      ctx.fillText(line, cardX + cardWidth / 2, lineY);
+
+      // Draw Stats (Health, Speed, Jump, Weight)
+      const statsY = startY + 180;
+      
+      this.drawStatBar(ctx, cardX + 15, statsY, cardWidth - 30, 'Health', template.maxHealth, 150);
+      this.drawStatBar(ctx, cardX + 15, statsY + 35, cardWidth - 30, 'Speed', template.speed, 10);
+      this.drawStatBar(ctx, cardX + 15, statsY + 70, cardWidth - 30, 'Jump', template.jumpForce, 25);
+      this.drawStatBar(ctx, cardX + 15, statsY + 105, cardWidth - 30, 'Weight', template.weight, 2.0);
+
+      // Selected / Ready Overlays
+      const p1SelectedThis = context.p1SelectedChar === charKey;
+      const p2SelectedThis = context.p2SelectedChar === charKey;
+
+      if (p1SelectedThis || p2SelectedThis) {
+        ctx.fillStyle = 'rgba(0, 255, 0, 0.15)';
+        ctx.fillRect(cardX, startY, cardWidth, cardHeight);
+
+        ctx.fillStyle = '#4caf50';
+        ctx.font = 'bold 20px sans-serif';
+        if (p1SelectedThis && p2SelectedThis) {
+          ctx.fillText('BOTH READY', cardX + cardWidth / 2, startY + cardHeight - 20);
+        } else if (p1SelectedThis) {
+          ctx.fillText('P1 READY', cardX + cardWidth / 2, startY + cardHeight - 20);
+        } else {
+          ctx.fillText(context.isSinglePlayer ? 'CPU READY' : 'P2 READY', cardX + cardWidth / 2, startY + cardHeight - 20);
+        }
+      }
+    }
+  }
+
+  private static drawStatBar(
+    ctx: CanvasRenderingContext2D,
+    x: number,
+    y: number,
+    w: number,
+    label: string,
+    val: number,
+    maxVal: number
+  ) {
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#c5c6c7';
+    ctx.font = '11px monospace';
+    ctx.fillText(`${label}: ${val.toFixed(1)}`, x, y);
+
+    // Bar background
+    ctx.fillStyle = '#0b0c10';
+    ctx.fillRect(x, y + 4, w, 6);
+
+    // Fill
+    const ratio = Math.min(1.0, val / maxVal);
+    ctx.fillStyle = '#66fcf1';
+    ctx.fillRect(x, y + 4, w * ratio, 6);
   }
 }

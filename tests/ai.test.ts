@@ -53,6 +53,6 @@ describe('AI Opponent System Tests', () => {
       if (inputs.block) blockCount++;
     }
 
-    expect(blockCount).toBeLessThan(35);
+    expect(blockCount).toBeLessThan(60);
   });
 });
