@@ -42,7 +42,7 @@ export class GameContext {
   public isPaused: boolean = false;
 
   // Round / Match variables
-  public matchState: MatchState = 'CHARACTER_SELECT';
+  public matchState: MatchState = 'MAIN_MENU';
   public roundNumber: number = 1;
   public p1RoundWins: number = 0;
   public p2RoundWins: number = 0;
@@ -50,6 +50,10 @@ export class GameContext {
   public countdownTimer: number = 3 * 60;
   public roundWinner: string | null = null;
   public matchWinner: string | null = null;
+
+  // Main Menu variables
+  public menuIndex: number = 0;
+  public menuInputCooldown: number = 0;
 
   // Character selection variables
   public p1CursorIndex: number = 0;

@@ -73,6 +73,11 @@ export class GameLoop {
   private tick() {
     if (this.context.isPaused) return;
 
+    if (this.context.matchState === 'MAIN_MENU') {
+      this.updateMainMenu();
+      return;
+    }
+
     if (this.context.arcadeCleared || this.context.arcadeGameOver) {
       this.updateArcadeOverlays();
       return;
@@ -213,6 +218,21 @@ export class GameLoop {
         break;
 
       case 'MATCH_END':
+        {
+          const p1Inputs = this.context.inputP1.getInputs(this.context.tickCount).inputs;
+          if (p1Inputs.lightAttack || p1Inputs.specialAttack) {
+            this.context.resetArcade();
+            this.context.matchState = 'MAIN_MENU';
+            this.context.arcadeStage = 1;
+            this.context.arcadeCleared = false;
+            this.context.arcadeGameOver = false;
+            this.context.p1SelectedChar = null;
+            this.context.p2SelectedChar = null;
+            this.context.selectedStageId = null;
+            this.context.menuIndex = 0;
+            this.context.menuInputCooldown = 12;
+          }
+        }
         break;
     }
 
@@ -496,6 +516,38 @@ export class GameLoop {
         ctx.roundWinner = null;
         ctx.matchWinner = null;
         ctx.projectiles = [];
+      }
+    }
+  }
+
+  private updateMainMenu() {
+    const ctx = this.context;
+    if (ctx.menuInputCooldown > 0) ctx.menuInputCooldown--;
+
+    const p1Inputs = ctx.inputP1.getInputs(ctx.tickCount).inputs;
+
+    if (ctx.menuInputCooldown === 0) {
+      if (p1Inputs.up) {
+        ctx.menuIndex = (ctx.menuIndex - 1 + 2) % 2;
+        ctx.menuInputCooldown = 12;
+      } else if (p1Inputs.down) {
+        ctx.menuIndex = (ctx.menuIndex + 1) % 2;
+        ctx.menuInputCooldown = 12;
+      } else if (p1Inputs.lightAttack || p1Inputs.specialAttack) {
+        ctx.menuInputCooldown = 12;
+        ctx.p1SelectedChar = null;
+        ctx.p2SelectedChar = null;
+        ctx.selectedStageId = null;
+
+        if (ctx.menuIndex === 0) {
+          ctx.isSinglePlayer = true;
+          ctx.isArcadeMode = true;
+        } else {
+          ctx.isSinglePlayer = false;
+          ctx.isArcadeMode = false;
+        }
+
+        ctx.matchState = 'CHARACTER_SELECT';
       }
     }
   }

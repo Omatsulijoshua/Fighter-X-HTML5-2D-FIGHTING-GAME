@@ -17,6 +17,7 @@ export type FighterState =
   | 'VICTORY';
 
 export type MatchState =
+  | 'MAIN_MENU'
   | 'WAITING'
   | 'CHARACTER_SELECT'
   | 'STAGE_SELECT'

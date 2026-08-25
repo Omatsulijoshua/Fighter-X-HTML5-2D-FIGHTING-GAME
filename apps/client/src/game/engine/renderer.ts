@@ -6,6 +6,13 @@ import { STAGE_TEMPLATES } from '../stages/stage-definitions.js';
 
 export class Renderer {
   public static draw(ctx: CanvasRenderingContext2D, context: GameContext, fps: number) {
+    if (context.matchState === 'MAIN_MENU') {
+      ctx.fillStyle = '#0b0c10';
+      ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+      this.drawMainMenu(ctx, context);
+      return;
+    }
+
     if (context.matchState === 'CHARACTER_SELECT') {
       ctx.fillStyle = '#0b0c10';
       ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
@@ -712,5 +719,55 @@ export class Renderer {
     const ratio = Math.min(1.0, val / maxVal);
     ctx.fillStyle = '#66fcf1';
     ctx.fillRect(x, y + 4, w * ratio, 6);
+  }
+
+  private static drawMainMenu(ctx: CanvasRenderingContext2D, context: GameContext) {
+    ctx.fillStyle = '#0d001a';
+    ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+
+    ctx.fillStyle = '#66fcf1';
+    ctx.font = 'bold 72px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.shadowColor = '#66fcf1';
+    ctx.shadowBlur = 15;
+    ctx.fillText('SHADOW CLASH', GAME_WIDTH / 2, 220);
+
+    ctx.shadowBlur = 0;
+
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+    ctx.font = '20px sans-serif';
+    ctx.fillText('HTML5 2D FIGHTING GAME', GAME_WIDTH / 2, 270);
+
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+    ctx.font = '14px sans-serif';
+    ctx.fillText('P1: Use W/S to cycle options, J to select', GAME_WIDTH / 2, 540);
+
+    const options = [
+      'ARCADE MODE (1P vs CPU)',
+      'VERSUS MODE (Local 2P)'
+    ];
+
+    const menuY = 380;
+    const spacing = 60;
+
+    for (let i = 0; i < 2; i++) {
+      const isSelected = context.menuIndex === i;
+      ctx.textAlign = 'center';
+      
+      if (isSelected) {
+        ctx.fillStyle = '#ff0055';
+        ctx.font = 'bold 28px sans-serif';
+        ctx.shadowColor = '#ff0055';
+        ctx.shadowBlur = 10;
+        ctx.fillText(`> ${options[i]} <`, GAME_WIDTH / 2, menuY + i * spacing);
+      } else {
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '24px sans-serif';
+        ctx.shadowBlur = 0;
+        ctx.fillText(options[i], GAME_WIDTH / 2, menuY + i * spacing);
+      }
+    }
+    
+    ctx.shadowBlur = 0;
   }
 }

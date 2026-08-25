@@ -6,6 +6,8 @@ describe('Character Selection Screen Tests', () => {
   test('should cycle cursor index and wrap correctly', () => {
     const context = new GameContext();
     const loop = new GameLoop({} as any, context);
+    context.matchState = 'CHARACTER_SELECT';
+    context.isArcadeMode = false;
 
     expect(context.matchState).toBe('CHARACTER_SELECT');
     expect(context.p1CursorIndex).toBe(0);
@@ -39,6 +41,8 @@ describe('Character Selection Screen Tests', () => {
   test('should lock selection and trigger CPU auto-selection in single player', () => {
     const context = new GameContext();
     const loop = new GameLoop({} as any, context);
+    context.matchState = 'CHARACTER_SELECT';
+    context.isArcadeMode = false;
     context.isSinglePlayer = true;
     context.p1CursorIndex = 2; // NYX
 

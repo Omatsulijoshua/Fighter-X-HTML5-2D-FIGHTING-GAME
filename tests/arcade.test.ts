@@ -7,6 +7,7 @@ describe('Arcade Mode Progression Tests', () => {
     const context = new GameContext();
     const loop = new GameLoop({} as any, context);
 
+    context.matchState = 'CHARACTER_SELECT';
     context.isArcadeMode = true;
     context.arcadeStage = 1;
     context.p1CursorIndex = 0; // KAIRO
@@ -46,6 +47,7 @@ describe('Arcade Mode Progression Tests', () => {
     const context = new GameContext();
     const loop = new GameLoop({} as any, context);
 
+    context.matchState = 'ROUND_END';
     context.isArcadeMode = true;
     context.arcadeStage = 1;
     context.arcadeCleared = true;

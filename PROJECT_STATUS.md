@@ -1,7 +1,7 @@
 # Project Status - SHADOW CLASH
 
 ## Current Status
-- **Current Phase**: Phase 9: Arcade Mode (Completed)
+- **Current Phase**: Phase 10: Local Versus Mode (Completed)
 
 ## Completed Features
 - **Root Configuration**: Setup npm workspaces, build scripts, tsconfig defaults, and testing framework (Vitest).
@@ -15,7 +15,7 @@
 - **Physics Engine (`apps/client/src/game/physics/physics-engine.ts`)**: Rigid-body physics, gravity, horizontal air/ground friction, velocity clamps, and boundary clamps.
 - **Collision Detector (`apps/client/src/game/collision/collision-detector.ts`)**: AABB overlaps detection and player-push resolution including corner clamping.
 - **Game Camera (`apps/client/src/game/camera/game-camera.ts`)**: Viewport centring mid-point follow tracking with linear interpolation (lerp).
-- **Renderer (`apps/client/src/game/engine/renderer.ts`)**: Renders stages, grids, player blocks, and HUD. Shows crouch, blocks, attack hits, special glows, combo numbers, round win dots, and dead/knocked-down positions. Added active projectiles drawing support. Draws active stage graphics dynamically. Renders custom arcade overlays, maps, and retry/clear screens.
+- **Renderer (`apps/client/src/game/engine/renderer.ts`)**: Renders stages, grids, player blocks, and HUD. Shows crouch, blocks, attack hits, special glows, combo numbers, round win dots, and dead/knocked-down positions. Added active projectiles drawing support. Draws active stage graphics dynamically. Renders custom arcade overlays, maps, and retry/clear screens. Draws Main Menu with selections and glows.
 - **Fixed Timestep Loop (`apps/client/src/game/engine/game-loop.ts`)**: Logic tick accumulator running at 60Hz.
 - **Fighter Stance (`apps/client/src/game/fighters/fighter.ts`)**: Fighter class with stats, crouches, blocks, hit flash, health, and death triggers.
 - **Hurtbox Set (`apps/client/src/game/fighters/fighter.ts`)**: Relative hurtbox definitions mapping Head, Torso, and Legs of fighters.
@@ -31,26 +31,28 @@
 - **Arena Stage Selection Screen (`apps/client/src/game/engine/renderer.ts`)**: Canvas-rendered stage select selector. Draws 3 side-by-side cards representing arenas (Shadow Sanctuary, Cyber Grid, Volcanic Rift) displaying preview icons (with colors, grids, floors), selection highlights, and descriptions.
 - **Stage Selection Loops (`apps/client/src/game/engine/game-loop.ts`)**: Tracks P1's selection inputs (A/D to cycle, J to select) during the STAGE_SELECT matchState, initializing battle countdowns upon lock.
 - **Single-Player Arcade Ladder (`apps/client/src/game/engine/game-loop.ts`)**: Structured a 4-match AI progression sequence (Easy Kairo -> Normal Nyx -> Hard Razor -> Expert Brutus) in themed arenas, complete with stage-clear overlays, Game Over retries, and victory screens.
+- **Landing Main Menu Screen (`apps/client/src/game/engine/renderer.ts`)**: Designed canvas-rendered main landing selection menu supporting up/down scrolling selection inputs (W/S to cycle, J to lock) toggling between Arcade Mode (SP) and Versus Mode (Local 2P).
+- **Match Scoreboard Menu Reset (`apps/client/src/game/engine/game-loop.ts`)**: Enabled resetting games directly back to the Main Menu when P1 presses Light Attack on match end scoreboards.
 
 ## Remaining Features
-- **Phase 10**: Local 2-Player Versus mode (full VS integration).
-- ... (Phases 11 to 16)
+- **Phase 11**: Express Matchmaking API (Matchmaking models, queue management).
+- ... (Phases 12 to 16)
 
 ## Known Bugs
 - None.
 
 ## Tests Performed
 1. **TypeScript compilation**: Built all packages using `npm run build`.
-2. **Unit tests**: Ran `npm run test` executing 35 tests checking shared models, physics, pushbacks, fighter hit behaviors, combat combo scaling, specials, projectiles, AI reaction delays, character select cursors, CPU selections, stage cursor cycles, stage select locks, arcade bypass selectors, stage clear advancing, game over retries, progression resets, and fighter initializations.
+2. **Unit tests**: Ran `npm run test` executing 37 tests checking shared models, physics, pushbacks, fighter hit behaviors, combat combo scaling, specials, projectiles, AI reaction delays, character select cursors, CPU selections, stage cursor cycles, stage select locks, arcade bypass selectors, stage clear advancing, game over retries, main menu cursors, versus mode select transitions, and fighter initializations.
 3. **Browser Integration**: Ran headless Chrome via Puppeteer to load `http://localhost:5173/`, checked for JS console and network errors, and verified WebSocket connection handshake.
 
 ## Test Results
 1. **TypeScript build**: Compiles cleanly with exit code 0.
-2. **Vitest unit tests**: 35/35 tests passed successfully.
-3. **Browser verification**: 0 console errors, 0 network errors. Verified stable loop ticking at 60 FPS, Socket.IO handshakes, canvas drawing of Character Select screen, Stage Select screen, gameplay arenas, and Arcade Mode screens.
+2. **Vitest unit tests**: 37/37 tests passed successfully.
+3. **Browser verification**: 0 console errors, 0 network errors. Verified stable loop ticking at 60 FPS, Socket.IO handshakes, canvas drawing of Main Menu, Character Select screen, Stage Select screen, gameplay arenas, and Arcade Mode screens.
 
 ## Next Phase
-- Phase 10: Local 2-Player Versus mode
+- Phase 11: Express Matchmaking API
 
 ## Important Architectural Decisions
 1. **Monorepo structure**: Using npm workspaces under `apps/*` and `packages/*` to maintain distinct deployment units (client, server, admin) and share typescript models efficiently.
@@ -66,3 +68,4 @@
 11. **State Isolation**: Checked matchState inside Renderer.draw and GameLoop.tick to completely isolate character selection render and control loops from battle loops.
 12. **Stage definitions decoupling**: Decoupling stage templates into `stage-definitions.ts` keeps stage data out of the main renderer file, allowing the engine to adapt to future stages dynamically.
 13. **Arcade Progression Interception**: Overlay states (`arcadeCleared` and `arcadeGameOver`) intercept standard tick cycles at the start of `tick()`, allowing dedicated input queries for menu navigation (retrying and advancing) before physics and combat evaluate.
+14. **State Machine Rooting**: Introducing `MAIN_MENU` at the beginning of the `MatchState` lifecycle cleanly coordinates game mode properties, player control assignments, and post-game score resets.
