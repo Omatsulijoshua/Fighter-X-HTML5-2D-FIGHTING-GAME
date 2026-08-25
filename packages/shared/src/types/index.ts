@@ -24,7 +24,8 @@ export type MatchState =
   | 'COUNTDOWN'
   | 'FIGHTING'
   | 'ROUND_END'
-  | 'MATCH_END';
+  | 'MATCH_END'
+  | 'LEADERBOARD';
 
 export interface AttackDefinition {
   id: string;

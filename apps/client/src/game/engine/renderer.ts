@@ -20,6 +20,13 @@ export class Renderer {
       return;
     }
 
+    if (context.matchState === 'LEADERBOARD') {
+      ctx.fillStyle = '#0b0c10';
+      ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+      this.drawLeaderboard(ctx, context);
+      return;
+    }
+
     if (context.matchState === 'CHARACTER_SELECT') {
       ctx.fillStyle = '#0b0c10';
       ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
@@ -763,13 +770,14 @@ export class Renderer {
     const options = [
       'ARCADE MODE (1P vs CPU)',
       'VERSUS MODE (Local 2P)',
-      'ONLINE MATCHMAKING (1P vs Online)'
+      'ONLINE MATCHMAKING (1P vs Online)',
+      'LEADERBOARD (Global Rankings)'
     ];
 
-    const menuY = 360;
-    const spacing = 55;
+    const menuY = 345;
+    const spacing = 50;
 
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 4; i++) {
       const isSelected = context.menuIndex === i;
       ctx.textAlign = 'center';
       
@@ -816,5 +824,81 @@ export class Renderer {
     ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
     ctx.font = '16px sans-serif';
     ctx.fillText('Please wait while the server configures your match arena', GAME_WIDTH / 2, 440);
+  }
+
+  private static drawLeaderboard(ctx: CanvasRenderingContext2D, context: GameContext) {
+    ctx.fillStyle = '#66fcf1';
+    ctx.font = 'bold 48px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.shadowColor = '#66fcf1';
+    ctx.shadowBlur = 10;
+    ctx.fillText('GLOBAL LEADERBOARDS', GAME_WIDTH / 2, 80);
+
+    ctx.shadowBlur = 0;
+
+    const boardX = 140;
+    const boardY = 140;
+    const boardWidth = GAME_WIDTH - 280;
+    const boardHeight = 440;
+
+    ctx.strokeStyle = '#45f3ff';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(boardX, boardY, boardWidth, boardHeight);
+    
+    ctx.fillStyle = 'rgba(31, 40, 51, 0.4)';
+    ctx.fillRect(boardX, boardY, boardWidth, boardHeight);
+
+    ctx.fillStyle = '#66fcf1';
+    ctx.font = 'bold 16px monospace';
+    ctx.textAlign = 'left';
+    
+    const colX = [180, 260, 480, 620, 780];
+    ctx.fillText('RANK', colX[0], boardY + 40);
+    ctx.fillText('USERNAME', colX[1], boardY + 40);
+    ctx.fillText('ELO RATING', colX[2], boardY + 40);
+    ctx.fillText('RECORD (W/L)', colX[3], boardY + 40);
+    ctx.fillText('FAVORITE FIGHTER', colX[4], boardY + 40);
+
+    ctx.strokeStyle = 'rgba(69, 243, 255, 0.4)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(boardX + 20, boardY + 55);
+    ctx.lineTo(boardX + boardWidth - 20, boardY + 55);
+    ctx.stroke();
+
+    const list = context.leaderboardData || [];
+    
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '15px monospace';
+
+    if (list.length === 0) {
+      ctx.textAlign = 'center';
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+      ctx.fillText('NO ENTRIES REGISTERED ON SERVER', GAME_WIDTH / 2, boardY + 220);
+    } else {
+      for (let i = 0; i < Math.min(8, list.length); i++) {
+        const item = list[i];
+        const rowY = boardY + 95 + i * 40;
+
+        ctx.textAlign = 'left';
+        
+        if (item.rank === 1) ctx.fillStyle = '#ffcc00';
+        else if (item.rank === 2) ctx.fillStyle = '#d1d1d1';
+        else if (item.rank === 3) ctx.fillStyle = '#cd7f32';
+        else ctx.fillStyle = '#ffffff';
+
+        ctx.fillText(`#${item.rank}`, colX[0], rowY);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText(item.username, colX[1], rowY);
+        ctx.fillText(`${item.rating} Elo`, colX[2], rowY);
+        ctx.fillText(`${item.wins}W / ${item.losses}L`, colX[3], rowY);
+        ctx.fillText(item.favoriteFighter, colX[4], rowY);
+      }
+    }
+
+    ctx.textAlign = 'center';
+    ctx.font = 'bold 16px sans-serif';
+    ctx.fillStyle = (Math.floor(context.tickCount / 30) % 2 === 0) ? '#ff0055' : '#ffffff';
+    ctx.fillText('PRESS J TO RETURN TO MAIN MENU', GAME_WIDTH / 2, boardY + boardHeight + 45);
   }
 }

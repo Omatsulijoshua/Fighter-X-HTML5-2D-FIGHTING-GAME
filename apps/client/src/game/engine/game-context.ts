@@ -54,6 +54,7 @@ export class GameContext {
   // Main Menu variables
   public menuIndex: number = 0;
   public menuInputCooldown: number = 0;
+  public leaderboardData: any[] = [];
 
   // Character selection variables
   public p1CursorIndex: number = 0;

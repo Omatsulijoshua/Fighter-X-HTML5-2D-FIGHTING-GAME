@@ -78,6 +78,11 @@ export class GameLoop {
       return;
     }
 
+    if (this.context.matchState === 'LEADERBOARD') {
+      this.updateLeaderboardScreen();
+      return;
+    }
+
     if (this.context.arcadeCleared || this.context.arcadeGameOver) {
       this.updateArcadeOverlays();
       return;
@@ -613,10 +618,10 @@ export class GameLoop {
 
     if (ctx.menuInputCooldown === 0) {
       if (p1Inputs.up) {
-        ctx.menuIndex = (ctx.menuIndex - 1 + 3) % 3;
+        ctx.menuIndex = (ctx.menuIndex - 1 + 4) % 4;
         ctx.menuInputCooldown = 12;
       } else if (p1Inputs.down) {
-        ctx.menuIndex = (ctx.menuIndex + 1) % 3;
+        ctx.menuIndex = (ctx.menuIndex + 1) % 4;
         ctx.menuInputCooldown = 12;
       } else if (p1Inputs.lightAttack || p1Inputs.specialAttack) {
         ctx.menuInputCooldown = 12;
@@ -643,8 +648,31 @@ export class GameLoop {
             userId: ctx.socket?.id || 'guest_p',
             username: 'Online Player'
           });
+        } else if (ctx.menuIndex === 3) {
+          ctx.matchState = 'LEADERBOARD';
+          fetch('http://localhost:3005/api/leaderboard')
+            .then(res => res.json())
+            .then(data => {
+              ctx.leaderboardData = data;
+            })
+            .catch(err => {
+              console.error('Failed to fetch leaderboard:', err);
+              ctx.leaderboardData = [];
+            });
         }
       }
+    }
+  }
+
+  private updateLeaderboardScreen() {
+    const ctx = this.context;
+    if (ctx.menuInputCooldown > 0) ctx.menuInputCooldown--;
+
+    const p1Inputs = ctx.inputP1.getInputs(ctx.tickCount).inputs;
+
+    if (ctx.menuInputCooldown === 0 && (p1Inputs.lightAttack || p1Inputs.specialAttack)) {
+      ctx.menuInputCooldown = 12;
+      ctx.matchState = 'MAIN_MENU';
     }
   }
 }

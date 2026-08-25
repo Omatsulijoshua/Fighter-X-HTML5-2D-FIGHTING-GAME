@@ -1,7 +1,7 @@
 # Project Status - SHADOW CLASH
 
 ## Current Status
-- **Current Phase**: Phase 16: Visual Polish, Asset Loaders, and Launch Configurations (Completed)
+- **Current Status**: All 16 Phases Completed (Visual Leaderboards added)
 
 ## Completed Features
 - **Root Configuration**: Setup npm workspaces, build scripts, tsconfig defaults, and testing framework (Vitest).
@@ -15,7 +15,7 @@
 - **Physics Engine (`apps/client/src/game/physics/physics-engine.ts`)**: Rigid-body physics, gravity, horizontal air/ground friction, velocity clamps, and boundary clamps.
 - **Collision Detector (`apps/client/src/game/collision/collision-detector.ts`)**: AABB overlaps detection and player-push resolution including corner clamping.
 - **Game Camera (`apps/client/src/game/camera/game-camera.ts`)**: Viewport centring mid-point follow tracking with linear interpolation (lerp).
-- **Renderer (`apps/client/src/game/engine/renderer.ts`)**: Renders stages, grids, player blocks, and HUD. Shows crouch, blocks, attack hits, special glows, combo numbers, round win dots, and dead/knocked-down positions. Added active projectiles drawing support. Draws active stage graphics dynamically. Renders custom arcade overlays, maps, and retry/clear screens. Draws Main Menu with selections and glows. Renders online search waiting indicators and wait-for-host stage select panels.
+- **Renderer (`apps/client/src/game/engine/renderer.ts`)**: Renders stages, grids, player blocks, and HUD. Shows crouch, blocks, attack hits, special glows, combo numbers, round win dots, and dead/knocked-down positions. Added active projectiles drawing support. Draws active stage graphics dynamically. Renders custom arcade overlays, maps, and retry/clear screens. Draws Main Menu with selections and glows. Renders online search waiting indicators and wait-for-host stage select panels. Draws a global high-score table showing Rank, Username, Elo Rating, and records in `LEADERBOARD` matchState.
 - **Fixed Timestep Loop (`apps/client/src/game/engine/game-loop.ts`)**: Logic tick accumulator running at 60Hz. Supports delay-based loop freezing if network packets are missing during online battles.
 - **Fighter Stance (`apps/client/src/game/fighters/fighter.ts`)**: Fighter class with stats, crouches, blocks, hit flash, health, and death triggers.
 - **Hurtbox Set (`apps/client/src/game/fighters/fighter.ts`)**: Relative hurtbox definitions mapping Head, Torso, and Legs of fighters.
@@ -31,7 +31,7 @@
 - **Arena Stage Selection Screen (`apps/client/src/game/engine/renderer.ts`)**: Canvas-rendered stage select selector. Draws 3 side-by-side cards representing arenas (Shadow Sanctuary, Cyber Grid, Volcanic Rift) displaying preview icons (with colors, grids, floors), selection highlights, and descriptions.
 - **Stage Selection Loops (`apps/client/src/game/engine/game-loop.ts`)**: Tracks P1's selection inputs (A/D to cycle, J to select) during the STAGE_SELECT matchState, initializing battle countdowns upon lock.
 - **Single-Player Arcade Ladder (`apps/client/src/game/engine/game-loop.ts`)**: Structured a 4-match AI progression sequence (Easy Kairo -> Normal Nyx -> Hard Razor -> Expert Brutus) in themed arenas, complete with stage-clear overlays, Game Over retries, and victory screens.
-- **Landing Main Menu Screen (`apps/client/src/game/engine/renderer.ts`)**: Designed canvas-rendered main landing selection menu supporting up/down scrolling selection inputs (W/S to cycle, J to lock) toggling between Arcade Mode (SP) and Versus Mode (Local 2P).
+- **Landing Main Menu Screen (`apps/client/src/game/engine/renderer.ts`)**: Designed canvas-rendered main landing selection menu supporting up/down scrolling selection inputs (W/S to cycle, J to lock) toggling between Arcade Mode (SP), Versus Mode (Local 2P), Online Matchmaking, and Global Leaderboards.
 - **Match Scoreboard Menu Reset (`apps/client/src/game/engine/game-loop.ts`)**: Enabled resetting games directly back to the Main Menu when P1 presses Light Attack on match end scoreboards.
 - **Multiplayer Matchmaking Service (`apps/server/src/matchmaking/matchmaker.ts`)**: Implemented FIFO player queue matcher generating unique random match room codes. Exposed HTTP endpoints (`GET /api/matchmaking/status`, `POST /api/matchmaking/join`, `POST /api/matchmaking/leave`) and WebSocket handlers (`matchmaking-join`, `matchmaking-leave`) that pair active sockets.
 - **Multiplayer Game Rooms System (`apps/server/src/rooms/room-manager.ts`)**: Coded a synchronized lobby rooms coordinator. Features socket triggers (`create-room`, `join-room`, `character-selected`, `stage-selected`), automatic host migration on disconnects, lobby empty purges, and real-time input-relay tunnels mapping matched connection ticks.
@@ -48,12 +48,12 @@
 
 ## Tests Performed
 1. **TypeScript compilation**: Built all packages using `npm run build`.
-2. **Unit tests**: Ran `npm run test` executing 52 tests checking shared models, physics, pushbacks, fighter hit behaviors, combat combo scaling, specials, projectiles, AI reaction delays, character select cursors, CPU selections, stage cursor cycles, stage select locks, arcade bypass selectors, stage clear advancing, game over retries, main menu cursors, versus mode select transitions, matchmaking queues, multiplayer rooms, host migrations, online menu choices, online cursor event emissions, delay-based tick freezes on missing inputs, catchup ticks, leaderboard rankings, score submit upgrades, launch constant values, character stats configurations, stage colors, and fighter initializations.
+2. **Unit tests**: Ran `npm run test` executing 53 tests checking shared models, physics, pushbacks, fighter hit behaviors, combat combo scaling, specials, projectiles, AI reaction delays, character select cursors, CPU selections, stage cursor cycles, stage select locks, arcade bypass selectors, stage clear advancing, game over retries, main menu cursors, versus mode select transitions, matchmaking queues, multiplayer rooms, host migrations, online menu choices, online cursor event emissions, delay-based tick freezes on missing inputs, catchup ticks, leaderboard rankings, score submit upgrades, launch constant values, character stats configurations, stage colors, leaderboard UI navigation states, return triggers, and fighter initializations.
 3. **Browser Integration**: Ran headless Chrome via Puppeteer to load `http://localhost:5173/`, checked for JS console and network errors, and verified WebSocket connection handshake.
 
 ## Test Results
 1. **TypeScript build**: Compiles cleanly with exit code 0.
-2. **Vitest unit tests**: 52/52 tests passed successfully.
+2. **Vitest unit tests**: 53/53 tests passed successfully.
 3. **Browser verification**: 0 console errors, 0 network errors. Verified stable loop ticking at 60 FPS, Socket.IO handshakes, canvas drawing, and server health.
 
 ## Next Phase
