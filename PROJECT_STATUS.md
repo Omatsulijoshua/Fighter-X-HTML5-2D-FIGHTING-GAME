@@ -1,7 +1,7 @@
 # Project Status - SHADOW CLASH
 
 ## Current Status
-- **Current Phase**: Phase 10: Local Versus Mode (Completed)
+- **Current Phase**: Phase 11: Matchmaking API (Completed)
 
 ## Completed Features
 - **Root Configuration**: Setup npm workspaces, build scripts, tsconfig defaults, and testing framework (Vitest).
@@ -33,26 +33,27 @@
 - **Single-Player Arcade Ladder (`apps/client/src/game/engine/game-loop.ts`)**: Structured a 4-match AI progression sequence (Easy Kairo -> Normal Nyx -> Hard Razor -> Expert Brutus) in themed arenas, complete with stage-clear overlays, Game Over retries, and victory screens.
 - **Landing Main Menu Screen (`apps/client/src/game/engine/renderer.ts`)**: Designed canvas-rendered main landing selection menu supporting up/down scrolling selection inputs (W/S to cycle, J to lock) toggling between Arcade Mode (SP) and Versus Mode (Local 2P).
 - **Match Scoreboard Menu Reset (`apps/client/src/game/engine/game-loop.ts`)**: Enabled resetting games directly back to the Main Menu when P1 presses Light Attack on match end scoreboards.
+- **Multiplayer Matchmaking Service (`apps/server/src/matchmaking/matchmaker.ts`)**: Implemented FIFO player queue matcher generating unique random match room codes. Exposed HTTP endpoints (`GET /api/matchmaking/status`, `POST /api/matchmaking/join`, `POST /api/matchmaking/leave`) and WebSocket handlers (`matchmaking-join`, `matchmaking-leave`) that pair active sockets.
 
 ## Remaining Features
-- **Phase 11**: Express Matchmaking API (Matchmaking models, queue management).
-- ... (Phases 12 to 16)
+- **Phase 12**: Multiplayer Game Rooms (Active rooms tracking, inputs propagation).
+- ... (Phases 13 to 16)
 
 ## Known Bugs
 - None.
 
 ## Tests Performed
 1. **TypeScript compilation**: Built all packages using `npm run build`.
-2. **Unit tests**: Ran `npm run test` executing 37 tests checking shared models, physics, pushbacks, fighter hit behaviors, combat combo scaling, specials, projectiles, AI reaction delays, character select cursors, CPU selections, stage cursor cycles, stage select locks, arcade bypass selectors, stage clear advancing, game over retries, main menu cursors, versus mode select transitions, and fighter initializations.
+2. **Unit tests**: Ran `npm run test` executing 40 tests checking shared models, physics, pushbacks, fighter hit behaviors, combat combo scaling, specials, projectiles, AI reaction delays, character select cursors, CPU selections, stage cursor cycles, stage select locks, arcade bypass selectors, stage clear advancing, game over retries, main menu cursors, versus mode select transitions, matchmaking queue additions, duplicate queue blocks, matchmaking queue leaves, matchmaking pairs, and fighter initializations.
 3. **Browser Integration**: Ran headless Chrome via Puppeteer to load `http://localhost:5173/`, checked for JS console and network errors, and verified WebSocket connection handshake.
 
 ## Test Results
 1. **TypeScript build**: Compiles cleanly with exit code 0.
-2. **Vitest unit tests**: 37/37 tests passed successfully.
-3. **Browser verification**: 0 console errors, 0 network errors. Verified stable loop ticking at 60 FPS, Socket.IO handshakes, canvas drawing of Main Menu, Character Select screen, Stage Select screen, gameplay arenas, and Arcade Mode screens.
+2. **Vitest unit tests**: 40/40 tests passed successfully.
+3. **Browser verification**: 0 console errors, 0 network errors. Verified stable loop ticking at 60 FPS, Socket.IO handshakes, canvas drawing, and server health.
 
 ## Next Phase
-- Phase 11: Express Matchmaking API
+- Phase 12: Multiplayer Game Rooms
 
 ## Important Architectural Decisions
 1. **Monorepo structure**: Using npm workspaces under `apps/*` and `packages/*` to maintain distinct deployment units (client, server, admin) and share typescript models efficiently.
@@ -69,3 +70,4 @@
 12. **Stage definitions decoupling**: Decoupling stage templates into `stage-definitions.ts` keeps stage data out of the main renderer file, allowing the engine to adapt to future stages dynamically.
 13. **Arcade Progression Interception**: Overlay states (`arcadeCleared` and `arcadeGameOver`) intercept standard tick cycles at the start of `tick()`, allowing dedicated input queries for menu navigation (retrying and advancing) before physics and combat evaluate.
 14. **State Machine Rooting**: Introducing `MAIN_MENU` at the beginning of the `MatchState` lifecycle cleanly coordinates game mode properties, player control assignments, and post-game score resets.
+15. **Event-driven Matchmaker**: Decoupled matching pairing tickers run asynchronously from network threads, relying on Socket rooms broadcasting to handle game synchronization and room allocations.
