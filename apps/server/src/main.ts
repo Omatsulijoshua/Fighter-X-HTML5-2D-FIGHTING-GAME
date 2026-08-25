@@ -142,6 +142,16 @@ io.on('connection', (socket) => {
     }
   });
 
+  socket.on(SOCKET_EVENTS.CHARACTER_CURSOR_MOVE, (payload: { cursorIndex: number }) => {
+    const oppSocketId = roomManager.getOpponentSocketId(socket.id);
+    if (oppSocketId) {
+      io.to(oppSocketId).emit(SOCKET_EVENTS.CHARACTER_CURSOR_MOVED, {
+        socketId: socket.id,
+        cursorIndex: payload.cursorIndex
+      });
+    }
+  });
+
   socket.on('stage-selected', (payload: { stageId: string }) => {
     const { stageId } = payload;
     const room = roomManager.getPlayerRoom(socket.id);

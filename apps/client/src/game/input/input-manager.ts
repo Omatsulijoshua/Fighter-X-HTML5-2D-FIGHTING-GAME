@@ -42,6 +42,7 @@ export const PLAYER_2_DEFAULT_BINDINGS: InputBindings = {
 export class InputManager {
   private keyStates: Map<string, boolean> = new Map();
   private bindings: InputBindings;
+  private injectedInputs: Map<number, any> = new Map();
 
   constructor(bindings: InputBindings) {
     this.bindings = bindings;
@@ -63,12 +64,22 @@ export class InputManager {
     });
   }
 
+  public injectNetworkInput(tick: number, inputs: any) {
+    this.injectedInputs.set(tick, inputs);
+  }
+
   public isPressed(action: keyof InputBindings): boolean {
     const code = this.bindings[action];
     return this.keyStates.get(code) === true;
   }
 
   public getInputs(tick: number): GameInputPayload {
+    if (this.injectedInputs.has(tick)) {
+      return {
+        tick,
+        inputs: this.injectedInputs.get(tick)
+      };
+    }
     return {
       tick,
       inputs: {

@@ -13,6 +13,13 @@ export class Renderer {
       return;
     }
 
+    if (context.matchState === 'WAITING') {
+      ctx.fillStyle = '#0b0c10';
+      ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+      this.drawWaitingScreen(ctx, context);
+      return;
+    }
+
     if (context.matchState === 'CHARACTER_SELECT') {
       ctx.fillStyle = '#0b0c10';
       ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
@@ -491,7 +498,11 @@ export class Renderer {
 
     ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
     ctx.font = '16px sans-serif';
-    ctx.fillText('P1: Use A/D to cycle, J to select Arena', GAME_WIDTH / 2, 120);
+    if (context.isMultiplayer && context.multiplayerSlot === 'p2') {
+      ctx.fillText('WAITING FOR HOST TO SELECT ARENA...', GAME_WIDTH / 2, 120);
+    } else {
+      ctx.fillText('P1: Use A/D to cycle, J to select Arena', GAME_WIDTH / 2, 120);
+    }
 
     const stageKeys = ['SHADOW_SANCTUARY', 'CYBER_GRID', 'VOLCANIC_RIFT'];
     const cardWidth = 280;
@@ -580,21 +591,28 @@ export class Renderer {
   }
 
   private static drawCharacterSelect(ctx: CanvasRenderingContext2D, context: GameContext) {
-    // Title
     ctx.fillStyle = '#66fcf1';
     ctx.font = 'bold 36px sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('SHADOW CLASH - CHARACTER SELECT', GAME_WIDTH / 2, 80);
 
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
-    ctx.font = '16px sans-serif';
-    ctx.fillText(
-      context.isSinglePlayer 
-        ? 'P1: Use A/D to cycle, J to select' 
-        : 'P1: A/D & J to select | P2: Left/Right & Num1 to select',
-      GAME_WIDTH / 2,
-      120
-    );
+    if (context.isMultiplayer) {
+      ctx.fillText(`ONLINE SELECTING - SLOT: [${context.multiplayerSlot?.toUpperCase()}]`, GAME_WIDTH / 2, 80);
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+      ctx.font = '16px sans-serif';
+      ctx.fillText('P1: Use A/D to cycle, J to select', GAME_WIDTH / 2, 120);
+    } else {
+      ctx.fillText('SHADOW CLASH - CHARACTER SELECT', GAME_WIDTH / 2, 80);
+
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+      ctx.font = '16px sans-serif';
+      ctx.fillText(
+        context.isSinglePlayer 
+          ? 'P1: Use A/D to cycle, J to select' 
+          : 'P1: A/D & J to select | P2: Left/Right & Num1 to select',
+        GAME_WIDTH / 2,
+        120
+      );
+    }
 
     const fighterKeys = ['KAIRO', 'BRUTUS', 'NYX', 'RAZOR'];
     const cardWidth = 220;
@@ -744,13 +762,14 @@ export class Renderer {
 
     const options = [
       'ARCADE MODE (1P vs CPU)',
-      'VERSUS MODE (Local 2P)'
+      'VERSUS MODE (Local 2P)',
+      'ONLINE MATCHMAKING (1P vs Online)'
     ];
 
-    const menuY = 380;
-    const spacing = 60;
+    const menuY = 360;
+    const spacing = 55;
 
-    for (let i = 0; i < 2; i++) {
+    for (let i = 0; i < 3; i++) {
       const isSelected = context.menuIndex === i;
       ctx.textAlign = 'center';
       
@@ -769,5 +788,33 @@ export class Renderer {
     }
     
     ctx.shadowBlur = 0;
+  }
+
+  private static drawWaitingScreen(ctx: CanvasRenderingContext2D, context: GameContext) {
+    ctx.fillStyle = '#0d001a';
+    ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+
+    ctx.fillStyle = '#66fcf1';
+    ctx.font = 'bold 48px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.shadowColor = '#66fcf1';
+    ctx.shadowBlur = 10;
+    ctx.fillText('ONLINE MATCHMAKING', GAME_WIDTH / 2, 260);
+
+    ctx.shadowBlur = 0;
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '24px sans-serif';
+    ctx.fillText('SEARCHING FOR OPPONENT...', GAME_WIDTH / 2, 340);
+
+    const dotsCount = Math.floor(context.tickCount / 30) % 4;
+    const dots = '.'.repeat(dotsCount);
+    ctx.textAlign = 'left';
+    ctx.fillText(dots, GAME_WIDTH / 2 + 160, 340);
+
+    ctx.textAlign = 'center';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+    ctx.font = '16px sans-serif';
+    ctx.fillText('Please wait while the server configures your match arena', GAME_WIDTH / 2, 440);
   }
 }

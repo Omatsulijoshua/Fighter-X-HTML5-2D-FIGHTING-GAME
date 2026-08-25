@@ -103,17 +103,35 @@ export class GameLoop {
     let p2Inputs = { left: false, right: false, up: false, down: false, lightAttack: false, heavyAttack: false, specialAttack: false, block: false, grab: false };
 
     if (this.context.matchState === 'FIGHTING') {
-      p1Inputs = this.context.inputP1.getInputs(this.context.tickCount).inputs;
-      if (this.context.isSinglePlayer) {
-        p2Inputs = this.aiOpponent.update(
-          p2,
-          p1,
-          this.context.aiDifficulty,
-          this.context.tickCount,
-          this.context.projectiles
-        );
-      } else {
+      if (this.context.isMultiplayer) {
+        const localInputs = this.context.inputP1.getInputs(this.context.tickCount).inputs;
+
+        this.context.socket?.emit('game-input', {
+          tick: this.context.tickCount,
+          inputs: localInputs
+        });
+
+        if (this.context.multiplayerSlot === 'p1') {
+          this.context.inputP1.injectNetworkInput(this.context.tickCount, localInputs);
+        } else {
+          this.context.inputP2.injectNetworkInput(this.context.tickCount, localInputs);
+        }
+
+        p1Inputs = this.context.inputP1.getInputs(this.context.tickCount).inputs;
         p2Inputs = this.context.inputP2.getInputs(this.context.tickCount).inputs;
+      } else {
+        p1Inputs = this.context.inputP1.getInputs(this.context.tickCount).inputs;
+        if (this.context.isSinglePlayer) {
+          p2Inputs = this.aiOpponent.update(
+            p2,
+            p1,
+            this.context.aiDifficulty,
+            this.context.tickCount,
+            this.context.projectiles
+          );
+        } else {
+          p2Inputs = this.context.inputP2.getInputs(this.context.tickCount).inputs;
+        }
       }
     }
 
@@ -364,11 +382,55 @@ export class GameLoop {
     const ctx = this.context;
     const fighterKeys = ['KAIRO', 'BRUTUS', 'NYX', 'RAZOR'];
 
-    // Decrement input cooldowns
     if (ctx.p1InputCooldown > 0) ctx.p1InputCooldown--;
     if (ctx.p2InputCooldown > 0) ctx.p2InputCooldown--;
 
     const p1Inputs = ctx.inputP1.getInputs(ctx.tickCount).inputs;
+
+    if (ctx.isMultiplayer) {
+      if (ctx.multiplayerSlot === 'p1') {
+        if (!ctx.p1SelectedChar && ctx.p1InputCooldown === 0) {
+          let cursorChanged = false;
+          if (p1Inputs.left) {
+            ctx.p1CursorIndex = (ctx.p1CursorIndex - 1 + 4) % 4;
+            ctx.p1InputCooldown = 12;
+            cursorChanged = true;
+          } else if (p1Inputs.right) {
+            ctx.p1CursorIndex = (ctx.p1CursorIndex + 1) % 4;
+            ctx.p1InputCooldown = 12;
+            cursorChanged = true;
+          } else if (p1Inputs.lightAttack || p1Inputs.specialAttack) {
+            ctx.p1SelectedChar = fighterKeys[ctx.p1CursorIndex];
+            ctx.p1InputCooldown = 12;
+            ctx.socket?.emit('character-selected', { characterId: ctx.p1SelectedChar });
+          }
+          if (cursorChanged) {
+            ctx.socket?.emit('character-cursor-move', { cursorIndex: ctx.p1CursorIndex });
+          }
+        }
+      } else if (ctx.multiplayerSlot === 'p2') {
+        if (!ctx.p2SelectedChar && ctx.p1InputCooldown === 0) {
+          let cursorChanged = false;
+          if (p1Inputs.left) {
+            ctx.p2CursorIndex = (ctx.p2CursorIndex - 1 + 4) % 4;
+            ctx.p1InputCooldown = 12;
+            cursorChanged = true;
+          } else if (p1Inputs.right) {
+            ctx.p2CursorIndex = (ctx.p2CursorIndex + 1) % 4;
+            ctx.p1InputCooldown = 12;
+            cursorChanged = true;
+          } else if (p1Inputs.lightAttack || p1Inputs.specialAttack) {
+            ctx.p2SelectedChar = fighterKeys[ctx.p2CursorIndex];
+            ctx.p1InputCooldown = 12;
+            ctx.socket?.emit('character-selected', { characterId: ctx.p2SelectedChar });
+          }
+          if (cursorChanged) {
+            ctx.socket?.emit('character-cursor-move', { cursorIndex: ctx.p2CursorIndex });
+          }
+        }
+      }
+      return;
+    }
 
     if (!ctx.p1SelectedChar && ctx.p1InputCooldown === 0) {
       if (p1Inputs.left) {
@@ -438,6 +500,13 @@ export class GameLoop {
 
     if (ctx.stageInputCooldown > 0) ctx.stageInputCooldown--;
 
+    if (ctx.isMultiplayer) {
+      if (ctx.multiplayerSlot !== 'p1') {
+        // Guest waits, has no stage select inputs
+        return;
+      }
+    }
+
     const p1Inputs = ctx.inputP1.getInputs(ctx.tickCount).inputs;
 
     if (ctx.stageInputCooldown === 0) {
@@ -448,21 +517,26 @@ export class GameLoop {
         ctx.stageCursorIndex = (ctx.stageCursorIndex + 1) % 3;
         ctx.stageInputCooldown = 12;
       } else if (p1Inputs.lightAttack || p1Inputs.specialAttack) {
-        ctx.selectedStageId = stageKeys[ctx.stageCursorIndex];
+        const stageId = stageKeys[ctx.stageCursorIndex];
         ctx.stageInputCooldown = 12;
 
-        if (ctx.p1SelectedChar && ctx.p2SelectedChar) {
-          ctx.initializeFighters(ctx.p1SelectedChar, ctx.p2SelectedChar);
-        }
+        if (ctx.isMultiplayer) {
+          ctx.socket?.emit('stage-selected', { stageId });
+        } else {
+          ctx.selectedStageId = stageId;
+          if (ctx.p1SelectedChar && ctx.p2SelectedChar) {
+            ctx.initializeFighters(ctx.p1SelectedChar, ctx.p2SelectedChar);
+          }
 
-        ctx.matchState = 'COUNTDOWN';
-        ctx.countdownTimer = 3 * 60;
-        ctx.roundNumber = 1;
-        ctx.p1RoundWins = 0;
-        ctx.p2RoundWins = 0;
-        ctx.roundWinner = null;
-        ctx.matchWinner = null;
-        ctx.projectiles = [];
+          ctx.matchState = 'COUNTDOWN';
+          ctx.countdownTimer = 3 * 60;
+          ctx.roundNumber = 1;
+          ctx.p1RoundWins = 0;
+          ctx.p2RoundWins = 0;
+          ctx.roundWinner = null;
+          ctx.matchWinner = null;
+          ctx.projectiles = [];
+        }
       }
     }
   }
@@ -528,26 +602,37 @@ export class GameLoop {
 
     if (ctx.menuInputCooldown === 0) {
       if (p1Inputs.up) {
-        ctx.menuIndex = (ctx.menuIndex - 1 + 2) % 2;
+        ctx.menuIndex = (ctx.menuIndex - 1 + 3) % 3;
         ctx.menuInputCooldown = 12;
       } else if (p1Inputs.down) {
-        ctx.menuIndex = (ctx.menuIndex + 1) % 2;
+        ctx.menuIndex = (ctx.menuIndex + 1) % 3;
         ctx.menuInputCooldown = 12;
       } else if (p1Inputs.lightAttack || p1Inputs.specialAttack) {
         ctx.menuInputCooldown = 12;
         ctx.p1SelectedChar = null;
         ctx.p2SelectedChar = null;
         ctx.selectedStageId = null;
+        ctx.isMultiplayer = false;
 
         if (ctx.menuIndex === 0) {
           ctx.isSinglePlayer = true;
           ctx.isArcadeMode = true;
-        } else {
+          ctx.matchState = 'CHARACTER_SELECT';
+        } else if (ctx.menuIndex === 1) {
           ctx.isSinglePlayer = false;
           ctx.isArcadeMode = false;
-        }
+          ctx.matchState = 'CHARACTER_SELECT';
+        } else if (ctx.menuIndex === 2) {
+          ctx.isSinglePlayer = false;
+          ctx.isArcadeMode = false;
+          ctx.isMultiplayer = true;
+          ctx.matchState = 'WAITING';
 
-        ctx.matchState = 'CHARACTER_SELECT';
+          ctx.socket?.emit('matchmaking-join', {
+            userId: ctx.socket?.id || 'guest_p',
+            username: 'Online Player'
+          });
+        }
       }
     }
   }

@@ -81,7 +81,16 @@ export class GameContext {
   // Projectile tracking
   public projectiles: GameProjectile[] = [];
 
-  constructor() {
+  // Multiplayer online variables
+  public isMultiplayer: boolean = false;
+  public roomCode: string | null = null;
+  public multiplayerSlot: 'p1' | 'p2' | null = null;
+  public opponentCursorIndex: number = 0;
+  public opponentSelectedChar: string | null = null;
+  public socket: any = null;
+
+  constructor(socket: any = null) {
+    this.socket = socket;
     this.camera = new GameCamera();
     this.inputP1 = new InputManager(PLAYER_1_DEFAULT_BINDINGS);
     this.inputP2 = new InputManager(PLAYER_2_DEFAULT_BINDINGS);

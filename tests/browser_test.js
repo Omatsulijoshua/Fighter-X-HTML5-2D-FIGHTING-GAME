@@ -25,9 +25,9 @@ import puppeteer from 'puppeteer';
   });
 
   page.on('response', response => {
-    if (!response.ok()) {
+    const status = response.status();
+    if (!response.ok() && status !== 304) {
       const url = response.url();
-      const status = response.status();
       consoleErrors.push(`Failed to load resource: ${url} - status ${status}`);
       console.error(`HTTP ERROR: ${url} - status ${status}`);
     }
@@ -49,7 +49,7 @@ import puppeteer from 'puppeteer';
   console.log('Page loaded, waiting 5 seconds for connection and canvas rendering...');
   await new Promise(resolve => setTimeout(resolve, 5000));
 
-  const screenshotPath = "C:\\Users\\SirBill's\\.gemini\\antigravity\\brain\\5edd0d75-1757-48f4-bc21-7bb7d7005d58\\phase12_screenshot.png";
+  const screenshotPath = "C:\\Users\\SirBill's\\.gemini\\antigravity\\brain\\5edd0d75-1757-48f4-bc21-7bb7d7005d58\\phase13_screenshot.png";
   console.log(`Taking screenshot and saving to: ${screenshotPath}`);
   await page.screenshot({ path: screenshotPath });
 

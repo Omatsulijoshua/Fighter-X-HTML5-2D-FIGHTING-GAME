@@ -11,6 +11,9 @@ export const SOCKET_EVENTS = {
   MATCHMAKING_STATUS: 'matchmaking-status',
   MATCHMAKING_MATCHED: 'matchmaking-matched',
   
+  CHARACTER_CURSOR_MOVE: 'character-cursor-move',
+  CHARACTER_CURSOR_MOVED: 'character-cursor-moved',
+  
   PLAYER_READY: 'player-ready',
   CHARACTER_SELECTED: 'character-selected',
   
