@@ -5,6 +5,7 @@ import cors from 'cors';
 import { GAME_WIDTH, GAME_HEIGHT, SOCKET_EVENTS } from '@shadow-clash/shared';
 import { matchmaker } from './matchmaking/matchmaker.js';
 import { roomManager } from './rooms/room-manager.js';
+import { LeaderboardService } from './database/leaderboard-service.js';
 
 const app = express();
 const port = process.env.PORT || 3005;
@@ -55,6 +56,26 @@ app.post('/api/matchmaking/leave', (req, res) => {
 
 app.get('/api/matchmaking/status', (req, res) => {
   res.json({ queueSize: matchmaker.getQueueSize() });
+});
+
+app.get('/api/leaderboard', async (req, res) => {
+  const limit = parseInt(req.query.limit as string) || 10;
+  const list = await LeaderboardService.getLeaderboard(limit);
+  res.json(list);
+});
+
+app.post('/api/leaderboard/submit', async (req, res) => {
+  const { userId, username, result, ratingChange } = req.body;
+  if (!userId || !username || !result || typeof ratingChange !== 'number') {
+    res.status(400).json({ error: 'Missing parameters' });
+    return;
+  }
+  const success = await LeaderboardService.submitMatchResult(userId, username, result, ratingChange);
+  if (success) {
+    res.json({ status: 'success' });
+  } else {
+    res.status(500).json({ error: 'Failed to record entry' });
+  }
 });
 
 const httpServer = createServer(app);

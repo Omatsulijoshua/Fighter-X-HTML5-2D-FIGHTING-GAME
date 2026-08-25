@@ -1,7 +1,7 @@
 # Project Status - SHADOW CLASH
 
 ## Current Status
-- **Current Phase**: Phase 14: In-game Network Synchronization (Completed)
+- **Current Phase**: Phase 15: Leaderboards (Completed)
 
 ## Completed Features
 - **Root Configuration**: Setup npm workspaces, build scripts, tsconfig defaults, and testing framework (Vitest).
@@ -9,7 +9,7 @@
 - **Server Scaffold (`apps/server`)**: Set up an authoritative Express server on port 3005 with Socket.IO integration and connection handlers.
 - **Client Scaffold (`apps/client`)**: Configured Vite, Socket.IO client connections, dynamic responsive canvas sizing (1280x720 aspect ratio), and a 60 FPS drawing loop rendering a grid stage and mock fighter elements.
 - **Admin Scaffold (`apps/admin`)**: Scaffolding Vite and admin portal dashboard foundation.
-- **Prisma Schema (`prisma/schema.prisma`)**: Modeled Postgres entities (User, Profile, Match, MatchPlayer, Leaderboard, GameSession, Ban, Report, Admin, GameSetting).
+- **Prisma Schema (`prisma/schema.prisma`)**: Modeled Postgres entities (User, Profile, Match, MatchPlayer, Leaderboard, GameSession, Ban, Report, Admin, GameSetting). Generated Prisma Client database wrapper.
 - **Testing Foundation (`tests`)**: Vitest configuration and verification checks.
 - **Input Manager (`apps/client/src/game/input/input-manager.ts`)**: Layout-independent keyboard event polling mapped to standard player inputs for local movement. Guarded event listener setup with `typeof window` check for server safety. Added network inputs injection and lookup support. Exposes `isRemote` status flags and `hasInputForTick()` checks.
 - **Physics Engine (`apps/client/src/game/physics/physics-engine.ts`)**: Rigid-body physics, gravity, horizontal air/ground friction, velocity clamps, and boundary clamps.
@@ -37,9 +37,9 @@
 - **Multiplayer Game Rooms System (`apps/server/src/rooms/room-manager.ts`)**: Coded a synchronized lobby rooms coordinator. Features socket triggers (`create-room`, `join-room`, `character-selected`, `stage-selected`), automatic host migration on disconnects, lobby empty purges, and real-time input-relay tunnels mapping matched connection ticks.
 - **Online Character Selection Screen (`apps/client/src/game/engine/renderer.ts`)**: Extended Main Menu to support three choices (Arcade, Versus, Online). Implemented search matching waiting screen overlays, network cursor movement synchronization relays (`character-cursor-move`), ready locks indicators, stage select wait screens for guests, and online battle input forwarders.
 - **In-game Network Synchronization (`apps/client/src/game/engine/game-loop.ts`)**: Implemented deterministic delay-based (wait-for-input) netcode synchronization that pauses tick advancement if input packets for either client slot are missing.
+- **Leaderboards API (`apps/server/src/database/leaderboard-service.ts`)**: Connected Prisma database profile schemas. Added REST API endpoints (`GET /api/leaderboard`, `POST /api/leaderboard/submit`) that fetch sorted ratings (Elo) charts and update wins/losses/ratings stats, complete with error-safe in-memory database fallback caching.
 
 ## Remaining Features
-- **Phase 15**: Express leaderboard API (Leaderboard models, scores routing).
 - **Phase 16**: Visual polish, asset loaders, and launch configurations.
 
 ## Known Bugs
@@ -47,16 +47,16 @@
 
 ## Tests Performed
 1. **TypeScript compilation**: Built all packages using `npm run build`.
-2. **Unit tests**: Ran `npm run test` executing 47 tests checking shared models, physics, pushbacks, fighter hit behaviors, combat combo scaling, specials, projectiles, AI reaction delays, character select cursors, CPU selections, stage cursor cycles, stage select locks, arcade bypass selectors, stage clear advancing, game over retries, main menu cursors, versus mode select transitions, matchmaking queues, multiplayer rooms, host migrations, online menu choices, online cursor event emissions, delay-based tick freezes on missing inputs, catchup ticks, and fighter initializations.
+2. **Unit tests**: Ran `npm run test` executing 49 tests checking shared models, physics, pushbacks, fighter hit behaviors, combat combo scaling, specials, projectiles, AI reaction delays, character select cursors, CPU selections, stage cursor cycles, stage select locks, arcade bypass selectors, stage clear advancing, game over retries, main menu cursors, versus mode select transitions, matchmaking queues, multiplayer rooms, host migrations, online menu choices, online cursor event emissions, delay-based tick freezes on missing inputs, catchup ticks, leaderboard rankings, score submit upgrades, and fighter initializations.
 3. **Browser Integration**: Ran headless Chrome via Puppeteer to load `http://localhost:5173/`, checked for JS console and network errors, and verified WebSocket connection handshake.
 
 ## Test Results
 1. **TypeScript build**: Compiles cleanly with exit code 0.
-2. **Vitest unit tests**: 47/47 tests passed successfully.
+2. **Vitest unit tests**: 49/49 tests passed successfully.
 3. **Browser verification**: 0 console errors, 0 network errors. Verified stable loop ticking at 60 FPS, Socket.IO handshakes, canvas drawing, and server health.
 
 ## Next Phase
-- Phase 15: Express Leaderboard API
+- Phase 16: Visual Polish, Asset Loaders, and Launch Configurations
 
 ## Important Architectural Decisions
 1. **Monorepo structure**: Using npm workspaces under `apps/*` and `packages/*` to maintain distinct deployment units (client, server, admin) and share typescript models efficiently.
@@ -77,3 +77,4 @@
 16. **FIFO relay netcode**: The server delegates game frame inputs dynamically between paired sockets without processing physics, minimizing server memory footprints and input latency.
 17. **Dynamic Input Injection**: Designed input slot injections inside `InputManager` supporting both local user key-polled inputs and network-relayed opponent packets within the same loop.
 18. **Delay-Based Netcode**: Selected delay-based (wait-for-input) synchronization for multiplayer matches to enforce absolute deterministic behavior and prevent player position shifts.
+19. **Dual-Path DB Handler**: Configured a Prisma DB API layer with automated in-memory arrays fallback to maintain liveness and allow local development and testing without requiring database hosting services.
