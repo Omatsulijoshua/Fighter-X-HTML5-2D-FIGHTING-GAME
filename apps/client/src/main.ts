@@ -165,3 +165,34 @@ window.addEventListener('keydown', (e) => {
     console.log(`Debug Mode toggled: ${context.debugMode}`);
   }
 });
+
+// 5. Touch Controls binding
+window.addEventListener('touchstart', () => {
+  document.body.classList.add('show-touch');
+}, { once: true });
+
+const touchControls = document.getElementById('touch-controls');
+if (touchControls) {
+  const buttons = touchControls.querySelectorAll('.touch-btn');
+  buttons.forEach(btn => {
+    const action = btn.getAttribute('data-action') as any;
+
+    const handleStart = (e: Event) => {
+      e.preventDefault();
+      context.inputP1.setVirtualInput(action, true);
+    };
+
+    const handleEnd = (e: Event) => {
+      e.preventDefault();
+      context.inputP1.setVirtualInput(action, false);
+    };
+
+    btn.addEventListener('touchstart', handleStart, { passive: false });
+    btn.addEventListener('touchend', handleEnd, { passive: false });
+    btn.addEventListener('touchcancel', handleEnd, { passive: false });
+
+    btn.addEventListener('mousedown', handleStart);
+    btn.addEventListener('mouseup', handleEnd);
+    btn.addEventListener('mouseleave', handleEnd);
+  });
+}

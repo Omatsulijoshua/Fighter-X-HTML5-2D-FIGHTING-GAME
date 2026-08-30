@@ -105,6 +105,13 @@ export class InputManager {
     return true;
   }
 
+  public setVirtualInput(action: keyof InputBindings, isPressed: boolean) {
+    const code = this.bindings[action];
+    if (code) {
+      this.keyStates.set(code, isPressed);
+    }
+  }
+
   public clear() {
     this.keyStates.clear();
     this.injectedInputs.clear();

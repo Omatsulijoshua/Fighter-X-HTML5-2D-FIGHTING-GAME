@@ -24,8 +24,10 @@
     }
     #game-container {
       position: relative;
-      width: 1280px;
-      height: 720px;
+      width: 95vw;
+      max-width: 1280px;
+      height: calc(95vw * 9 / 16);
+      max-height: 720px;
       box-shadow: 0 0 30px rgba(0, 0, 0, 0.8), 0 0 15px rgba(102, 252, 241, 0.2);
       border: 2px solid #1f2833;
       border-radius: 4px;
@@ -64,6 +66,82 @@
       padding: 5px 10px;
       border-radius: 4px;
     }
+
+    #touch-controls {
+      display: none;
+      position: absolute;
+      bottom: 20px;
+      left: 0;
+      width: 100%;
+      padding: 0 40px;
+      pointer-events: none;
+      justify-content: space-between;
+      z-index: 10;
+    }
+    
+    @media (pointer: coarse) {
+      #touch-controls {
+        display: flex;
+      }
+    }
+    
+    .show-touch #touch-controls {
+      display: flex;
+    }
+
+    .touch-group {
+      display: grid;
+      pointer-events: auto;
+      gap: 10px;
+    }
+    
+    .left-group {
+      grid-template-areas: 
+        ". up ."
+        "left . right"
+        ". down .";
+      width: 165px;
+      height: 165px;
+    }
+    
+    .right-group {
+      grid-template-areas: 
+        "grab block ."
+        "light heavy special";
+      width: 225px;
+      height: 165px;
+      align-content: end;
+    }
+
+    .touch-btn {
+      width: 48px;
+      height: 48px;
+      background: rgba(31, 40, 51, 0.6);
+      border: 2px solid #66fcf1;
+      border-radius: 50%;
+      color: #66fcf1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-weight: bold;
+      font-size: 18px;
+      cursor: pointer;
+      user-select: none;
+      touch-action: manipulation;
+      transition: background 0.1s, transform 0.1s;
+    }
+    
+    .touch-btn:active {
+      background: rgba(102, 252, 241, 0.4);
+      transform: scale(0.9);
+      color: #ffffff;
+      border-color: #ffffff;
+    }
+    
+    .btn-up { grid-area: up; }
+    .btn-left { grid-area: left; }
+    .btn-right { grid-area: right; }
+    .btn-down { grid-area: down; }
   </style>
 </head>
 <body>
@@ -73,6 +151,21 @@
       <div class="hud-header">
         <div id="server-status" class="status-text">Server: Connecting...</div>
         <div id="game-fps" class="status-text">FPS: --</div>
+      </div>
+    </div>
+    <div id="touch-controls">
+      <div class="touch-group left-group">
+        <div class="touch-btn btn-up" data-action="up">▲</div>
+        <div class="touch-btn btn-left" data-action="left">◀</div>
+        <div class="touch-btn btn-right" data-action="right">▶</div>
+        <div class="touch-btn btn-down" data-action="down">▼</div>
+      </div>
+      <div class="touch-group right-group">
+        <div class="touch-btn btn-action" style="grid-area: grab;" data-action="grab">G</div>
+        <div class="touch-btn btn-action" style="grid-area: block;" data-action="block">B</div>
+        <div class="touch-btn btn-action" style="grid-area: light;" data-action="lightAttack">L</div>
+        <div class="touch-btn btn-action" style="grid-area: heavy;" data-action="heavyAttack">H</div>
+        <div class="touch-btn btn-action" style="grid-area: special;" data-action="specialAttack">S</div>
       </div>
     </div>
   </div>
